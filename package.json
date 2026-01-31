@@ -34,8 +34,8 @@
     "@heroui/number-input": "^2.0.12",
     "@heroui/progress": "2.2.7",
     "@heroui/react": "2.7.11",
-    "@heroui/select": "2.4.10",
     "@heroui/scroll-shadow": "^2.3.19",
+    "@heroui/select": "2.4.10",
     "@heroui/slider": "2.4.8",
     "@heroui/spinner": "2.2.7",
     "@heroui/switch": "^2.2.20",
@@ -86,6 +86,8 @@
     }
   },
   "lint-staged": {
-    "src/**/*.{js,ts,jsx,tsx}": ["biome check --write"]
+    "src/**/*.{js,ts,jsx,tsx}": [
+      "biome check --write"
+    ]
   }
 }

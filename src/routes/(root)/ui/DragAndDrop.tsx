@@ -1,6 +1,6 @@
 import { event } from '@tauri-apps/api'
 import { AnimatePresence, motion } from 'framer-motion'
-import React from 'react'
+import React, { useEffect } from 'react'
 import ReactDOM from 'react-dom'
 
 import Icon from '@/components/Icon'
@@ -43,7 +43,7 @@ function DragAndDrop({
     dragAndDropListenerRef.current?.drop?.()
   }, [])
 
-  React.useEffect(() => {
+  useEffect(() => {
     ;(async function iife() {
       cancelDragAndDropEvents()
 
@@ -115,7 +115,7 @@ function DragAndDrop({
     return () => {
       cancelDragAndDropEvents()
     }
-  }, [onFile, disable, cancelDragAndDropEvents])
+  }, [onFile, disable, cancelDragAndDropEvents, multiple])
 
   return (
     <>

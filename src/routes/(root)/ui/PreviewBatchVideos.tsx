@@ -102,12 +102,13 @@ function PreviewBatchVideos() {
                   )}
                   radius="lg"
                 >
-                  <div className="relative">
+                  <div className="relative w-full">
                     {video.thumbnailPath ? (
                       <Image
                         src={video.thumbnailPath as string}
                         alt={video.fileName ?? ''}
-                        className="w-full aspect-video object-cover drop-shadow-xl"
+                        className="w-full max-w-[unset] h-[220px] object-cover drop-shadow-xl"
+                        removeWrapper
                       />
                     ) : (
                       <div className="w-full aspect-video bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center">

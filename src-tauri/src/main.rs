@@ -7,16 +7,16 @@ use tauri_plugin_log::{Target as LogTarget, TargetKind as LogTargetKind};
 
 use lib::tauri_commands::{
     ffmpeg::{
-        __cmd__compress_video, __cmd__compress_videos_batch,
-        __cmd__generate_video_thumbnail, __cmd__get_video_info, compress_video,
-        compress_videos_batch, generate_video_thumbnail, get_video_info,
+        __cmd__compress_video, __cmd__compress_videos_batch, __cmd__generate_video_thumbnail,
+        __cmd__get_video_info, compress_video, compress_videos_batch, generate_video_thumbnail,
+        get_video_info,
     },
     file_manager::{__cmd__show_item_in_file_manager, show_item_in_file_manager},
     fs::{
         __cmd__delete_cache, __cmd__delete_file, __cmd__get_file_metadata,
         __cmd__get_image_dimension, __cmd__move_file, delete_cache, delete_file, get_file_metadata,
         get_image_dimension, move_file,
-    }
+    },
 };
 
 #[cfg(target_os = "linux")]
