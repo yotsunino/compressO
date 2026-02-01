@@ -161,7 +161,9 @@ function VideoConfig() {
           {...zoomInTransition}
         >
           <div className="flex items-center justify-between w-full">
-            <p className="text-xl font-bold">Output Settings</p>
+            <p className="text-xl font-bold">
+              {videos.length > 1 ? 'Batch' : 'Output'} Settings
+            </p>
             {!isCompressing ? <CompressionActions /> : null}
           </div>
           <>

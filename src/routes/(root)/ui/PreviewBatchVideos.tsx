@@ -167,33 +167,11 @@ function PreviewBatchVideos() {
                           />
                         </div>
                       )}
-                      {video.isProcessCompleted &&
-                      video?.compressedVideo?.isSaved &&
-                      video?.compressedVideo?.savedPath ? (
-                        <div className="absolute top-2 left-2 z-10 flex gap-2">
-                          <Tooltip
-                            content="Show in File Explorer"
-                            aria-label="Show in File Explorer"
-                          >
-                            <Button
-                              size="sm"
-                              isIconOnly
-                              onPress={() =>
-                                handleOpenInFileManager(
-                                  video.compressedVideo!.savedPath!,
-                                )
-                              }
-                              className="p-2 rounded-full text-white"
-                            >
-                              <Icon name="fileExplorer" size={20} />
-                            </Button>
-                          </Tooltip>
-                        </div>
-                      ) : null}
-                      {!isCompressing &&
-                      video?.isProcessCompleted &&
-                      video?.compressedVideo?.isSuccessful ? (
-                        <div className="absolute top-2 left-2 z-10 flex gap-2">
+
+                      <div className="absolute top-2 left-2 z-10 flex gap-2 items-center">
+                        {!isCompressing &&
+                        video?.isProcessCompleted &&
+                        video?.compressedVideo?.isSuccessful ? (
                           <Tooltip
                             content="Copy to clipboard"
                             aria-label="Copy to clipboard"
@@ -212,8 +190,29 @@ function PreviewBatchVideos() {
                               <Icon name="copy" size={28} />
                             </Button>
                           </Tooltip>
-                        </div>
-                      ) : null}
+                        ) : null}
+                        {video.isProcessCompleted &&
+                        video?.compressedVideo?.isSaved &&
+                        video?.compressedVideo?.savedPath ? (
+                          <Tooltip
+                            content="Show in File Explorer"
+                            aria-label="Show in File Explorer"
+                          >
+                            <Button
+                              size="sm"
+                              isIconOnly
+                              onPress={() =>
+                                handleOpenInFileManager(
+                                  video.compressedVideo!.savedPath!,
+                                )
+                              }
+                              className="p-2 rounded-full text-white"
+                            >
+                              <Icon name="fileExplorer" size={20} />
+                            </Button>
+                          </Tooltip>
+                        ) : null}
+                      </div>
                       {!isCompressing &&
                       !isProcessCompleted &&
                       !isLoadingFiles ? (
