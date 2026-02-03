@@ -146,4 +146,18 @@ pub struct VideoCompressionConfig {
     pub dimensions: Option<(u32, u32)>,
     pub fps: Option<String>,
     pub transforms_history: Option<Vec<Value>>,
+    pub metadata_config: Option<VideoMetadataConfig>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct VideoMetadataConfig {
+    pub title: Option<String>,
+    pub artist: Option<String>,
+    pub album: Option<String>,
+    pub year: Option<String>,
+    pub comment: Option<String>,
+    pub genre: Option<String>,
+    pub creation_time: Option<String>,
+    pub thumbnail_path: Option<String>,
 }

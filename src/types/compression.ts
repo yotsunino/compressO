@@ -1,3 +1,4 @@
+import { VideoMetadataConfig } from './app'
 import { FileMetadata } from './fs'
 
 export const extensions = {
@@ -93,4 +94,5 @@ export type VideoCompressionConfig = {
   dimensions?: [number, number] | null
   fps?: string | null
   transformsHistory?: VideoTransformsHistory[] | null
+  metadataConfig?: VideoMetadataConfig | null
 }

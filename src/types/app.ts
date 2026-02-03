@@ -1,9 +1,24 @@
+import { DateValue } from '@internationalized/date'
+
 import {
   compressionPresets,
   extensions,
   VideoTransforms,
   VideoTransformsHistory,
 } from '@/types/compression'
+
+export type VideoMetadataConfig = {
+  title?: string | null
+  artist?: string | null
+  album?: string | null
+  year?: string | null
+  comment?: string | null
+  genre?: string | null
+  creationTime?: string | null
+  creationTimeRaw?: DateValue | null
+  shouldEnableCreationTime?: boolean
+  thumbnailPath?: string | null
+}
 
 export type VideoConfig = {
   convertToExtension: keyof typeof extensions.video
@@ -22,6 +37,8 @@ export type VideoConfig = {
     transformsHistory: VideoTransformsHistory[]
     previewUrl?: string
   }
+  shouldPreserveMetadata?: boolean
+  metadataConfig?: VideoMetadataConfig | null
 }
 
 export type Video = {

@@ -10,10 +10,12 @@ import Button from '@/components/Button'
 import Icon from '@/components/Icon'
 import Tabs from '@/components/Tabs'
 import { compressVideos } from '@/tauri/commands/ffmpeg'
+import { VideoMetadataConfig } from '@/types/app'
 import { CompressionResult, VideoTransformsHistory } from '@/types/compression'
 import { formatBytes } from '@/utils/fs'
 import CompressionPreset from './CompressionPreset'
 import CompressionQuality from './CompressionQuality'
+import Metadata from './Metadata'
 import MuteAudio from './MuteAudio'
 import TransformVideo from './TransformVideo'
 import VideoDimensions from './VideoDimensions'
@@ -112,6 +114,9 @@ function OutputSettings({ videoIndex }: OutputSettingsProps) {
             ? ((v.config.transformVideoConfig?.transformsHistory ??
                 []) as VideoTransformsHistory[])
             : null,
+          metadataConfig: !v.config?.shouldPreserveMetadata
+            ? ((v.config?.metadataConfig as VideoMetadataConfig) ?? null)
+            : null,
         })),
       )
       if (Object.keys(results).length === 0) {
@@ -152,7 +157,7 @@ function OutputSettings({ videoIndex }: OutputSettingsProps) {
 
   return (
     <section className="p-4 rounded-xl border-2 border-zinc-200 dark:border-zinc-800 h-full">
-      <div className="flex items-center justify-between w-full mb-4">
+      <div className="flex items-center justify-between w-full mb-2">
         <p className="text-xl font-bold">
           {videos.length === 1 || selectedVideoIndexForCustomization > -1
             ? 'Output'
@@ -172,15 +177,10 @@ function OutputSettings({ videoIndex }: OutputSettingsProps) {
           classNames={{}}
         >
           {Object.values(TABS).map((t) => (
-            <Tab
-              key={t.id}
-              value={t.id}
-              title={t.title}
-              className="text-[11px]"
-            />
+            <Tab key={t.id} value={t.id} title={t.title} />
           ))}
         </Tabs>
-        <div className="my-4">
+        <div className="my-6">
           {tab === 'video' ? (
             <div>
               <>
@@ -213,14 +213,18 @@ function OutputSettings({ videoIndex }: OutputSettingsProps) {
           {tab === 'audio' ? (
             <>
               <MuteAudio videoIndex={videoIndex} />
-              <Divider className="my-3" />
+            </>
+          ) : null}
+          {tab === 'metadata' ? (
+            <>
+              <Metadata videoIndex={videoIndex} />
             </>
           ) : null}
         </div>
       </section>
 
       {selectedVideoIndexForCustomization < 0 ? (
-        <div className="mt-4">
+        <div className="mt-8">
           {isCompressing ? (
             <CancelCompression />
           ) : isProcessCompleted ? (

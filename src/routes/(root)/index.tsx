@@ -1,8 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { core } from '@tauri-apps/api'
+import { open } from '@tauri-apps/plugin-dialog'
 import { motion } from 'framer-motion'
 import cloneDeep from 'lodash/cloneDeep'
-import React from 'react'
+import React, { useCallback } from 'react'
 import { useSnapshot } from 'valtio'
 
 import Icon from '@/components/Icon'
@@ -11,7 +12,6 @@ import Spinner from '@/components/Spinner'
 import { toast } from '@/components/Toast'
 import { generateVideoThumbnail, getVideoInfo } from '@/tauri/commands/ffmpeg'
 import { getFileMetadata } from '@/tauri/commands/fs'
-import VideoPicker from '@/tauri/components/VideoPicker'
 import { extensions } from '@/types/compression'
 import { formatBytes } from '@/utils/fs'
 import { convertDurationToMilliseconds } from '@/utils/string'
@@ -129,6 +129,28 @@ function Root() {
     [resetProxy],
   )
 
+  const pickVideosToCompress = useCallback(async () => {
+    try {
+      const filePath = await open({
+        directory: false,
+        multiple: true,
+        title: `Select video(s) to compress.`,
+        filters: [
+          { name: 'video', extensions: Object.keys(extensions?.video) },
+        ],
+      })
+      if (filePath == null) {
+        const message = 'File selection config is invalid.'
+        // biome-ignore lint/suspicious/noConsole: <>
+        console.warn(message)
+        return
+      }
+      handleVideoSelected(filePath)
+    } catch (error: any) {
+      toast.error(error?.message ?? 'Could not select a video.')
+    }
+  }, [handleVideoSelected])
+
   return isLoadingFiles ? (
     !videos.length || (totalSelectedFilesCount > 1 && videos.length === 1) ? (
       <div className="w-full h-full flex justify-center items-center">
@@ -144,43 +166,36 @@ function Root() {
       containerProps={{ className: 'relative' }}
       childrenProps={{ className: 'm-auto' }}
     >
-      <VideoPicker
-        multiple
-        onSuccess={({ filePath }) => handleVideoSelected(filePath)}
+      <motion.div
+        role="button"
+        tabIndex={0}
+        className="h-full w-full flex flex-col justify-center items-center z-0"
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{
+          scale: 1,
+          opacity: 1,
+          transition: {
+            duration: 0.6,
+            bounce: 0.3,
+            type: 'spring',
+          },
+        }}
+        onClick={pickVideosToCompress}
+        onKeyDown={(evt) => {
+          if (evt?.key === 'Enter') {
+            pickVideosToCompress()
+          }
+        }}
       >
-        {({ onClick }) => (
-          <motion.div
-            role="button"
-            tabIndex={0}
-            className="h-full w-full flex flex-col justify-center items-center z-0"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{
-              scale: 1,
-              opacity: 1,
-              transition: {
-                duration: 0.6,
-                bounce: 0.3,
-                type: 'spring',
-              },
-            }}
-            onClick={onClick}
-            onKeyDown={(evt) => {
-              if (evt?.key === 'Enter') {
-                onClick()
-              }
-            }}
-          >
-            <div className="flex flex-col justify-center items-center py-16 px-20 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl">
-              <Icon name="videoFile" className="text-primary" size={60} />
-              <p className="italic text-sm mt-4 text-gray-600 dark:text-gray-400 text-center">
-                Drag & Drop
-                <span className="block">Or</span>
-                Click to select video(s).
-              </p>
-            </div>
-          </motion.div>
-        )}
-      </VideoPicker>
+        <div className="flex flex-col justify-center items-center py-16 px-20 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl">
+          <Icon name="videoFile" className="text-primary" size={60} />
+          <p className="italic text-sm mt-4 text-gray-600 dark:text-gray-400 text-center">
+            Drag & Drop
+            <span className="block">Or</span>
+            Click to select video(s).
+          </p>
+        </div>
+      </motion.div>
       <DragAndDrop
         multiple
         disable={videos.length > 0}

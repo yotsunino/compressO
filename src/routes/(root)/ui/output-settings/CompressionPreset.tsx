@@ -74,6 +74,7 @@ function CompressionPreset({ videoIndex }: CompressionPresetProps) {
           onValueChange={handleSwitchToggle}
           className="flex justify-center items-center"
           isDisabled={shouldDisableInput}
+          size="sm"
         >
           <div className="flex justify-center items-center">
             <span className="text-gray-600 dark:text-gray-400 block mr-2 text-sm">

@@ -1,7 +1,20 @@
+import { getLocalTimeZone, now } from '@internationalized/date'
 import cloneDeep from 'lodash/cloneDeep'
 import { proxy } from 'valtio'
 
-import { App, VideoConfig } from '../../types/app'
+import { App, VideoConfig, VideoMetadataConfig } from '../../types/app'
+
+export const videoMetadataConfigInitialState: VideoMetadataConfig = {
+  title: '',
+  album: '',
+  artist: '',
+  comment: '',
+  year: '',
+  genre: '',
+  creationTime: '',
+  creationTimeRaw: now(getLocalTimeZone()),
+  thumbnailPath: '',
+}
 
 export const videoConfigInitialState: VideoConfig = {
   convertToExtension: 'mp4',
@@ -10,6 +23,8 @@ export const videoConfigInitialState: VideoConfig = {
   shouldMuteVideo: false,
   quality: 50,
   shouldEnableQuality: false,
+  shouldPreserveMetadata: true,
+  metadataConfig: null,
 }
 
 const appInitialState: App = {
