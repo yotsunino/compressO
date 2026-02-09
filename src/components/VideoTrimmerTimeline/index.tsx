@@ -8,7 +8,16 @@ import {
   TimelineEffect,
   TimelineRow,
 } from '@xzdarcy/timeline-engine'
-import { FC, ForwardedRef, forwardRef, useState } from 'react'
+import {
+  FC,
+  ForwardedRef,
+  forwardRef,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react'
+
+import Tooltip from '../Tooltip'
 
 export const rowIds = {
   videoBoundary: 'video-boundary',
@@ -23,6 +32,9 @@ const effects = {
     id: rowIds.videoTrim,
   },
 } satisfies Record<string, TimelineEffect>
+
+const generateActionId = () =>
+  `trim_action_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
 
 const getDefaultEditorData = ({
   duration,
@@ -54,13 +66,13 @@ const getDefaultEditorData = ({
       id: rowIds.videoTrim,
       actions: [
         {
-          id: 'action1',
+          id: generateActionId(),
           start: startDuration ?? 0,
           minStart: 0,
           end: endDuration ?? duration,
           maxEnd: duration,
           effectId: effects.effectVideoTrim.id,
-          movable: false,
+          movable: true,
         },
       ],
     },
@@ -76,13 +88,48 @@ export const scales = {
 export const TrimRow: FC<{
   action: TimelineAction
   row: TimelineRow
-}> = ({ action }) => {
+  onSplit?: (actionId: string, splitTime: number) => void
+  onClick?: (actionId: string) => void
+  isSelected?: boolean
+}> = ({ action, onSplit, onClick, isSelected = false }) => {
+  const handleSplitClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (e.detail === 1) {
+      onClick?.(action.id)
+    } else if (e.detail === 2) {
+      const rect = e.currentTarget.getBoundingClientRect()
+      const clickX = e.clientX - rect.left
+      const clickRatio = clickX / rect.width
+      const splitTime = action.start + (action.end - action.start) * clickRatio
+      onSplit?.(action.id, splitTime)
+    }
+  }
+
   return (
-    <div className="flex justify-center items-center bg-primary h-8 rounded-lg">
-      <div className="text-center text-white1">{`${(
-        action.end - action.start
-      ).toFixed(2)}s`}</div>
-    </div>
+    <Tooltip
+      content={
+        <div className="flex flex-col items-center justify-center">
+          <p>Click to select</p>
+          <p>Double click to split</p>
+        </div>
+      }
+      delay={500}
+    >
+      <div
+        className={`flex justify-center items-center h-8 rounded-lg cursor-pointer group relative bg-primary`}
+        onClick={handleSplitClick}
+      >
+        <div className="text-center text-white1">{`${(
+          action.end - action.start
+        ).toFixed(2)}s`}</div>
+        <div className="absolute inset-0 border-2 border-white/30 opacity-0 group-hover:opacity-100 rounded-lg pointer-events-none" />
+        {isSelected ? (
+          <>
+            <div className="absolute inset-0 bg-white/20 rounded-lg pointer-events-none border-2 border-black1 dark:border-white1" />
+          </>
+        ) : null}
+      </div>
+    </Tooltip>
   )
 }
 
@@ -124,33 +171,137 @@ const VideoTrimmerTimeline = forwardRef(
     const [editorData, setEditorData] = useState<TimelineRow[]>(() =>
       getDefaultEditorData({ duration, startDuration, endDuration }),
     )
+    const [selectedActionId, setSelectedActionId] = useState<string | null>(
+      null,
+    )
+
+    const handleSplitAction = useCallback(
+      (actionId: string, splitTime: number) => {
+        setEditorData((prevData) =>
+          prevData.map((row) => {
+            if (row.id === rowIds.videoTrim) {
+              const actionToSplit = row.actions.find((a) => a.id === actionId)
+              if (!actionToSplit) return row
+
+              const minSplitSize = 0.5
+              if (
+                splitTime - actionToSplit.start < minSplitSize ||
+                actionToSplit.end - splitTime < minSplitSize
+              ) {
+                return row
+              }
+
+              const leftAction: TimelineAction = {
+                ...actionToSplit,
+                id: generateActionId(),
+                end: splitTime,
+                maxEnd: splitTime,
+              }
+              const rightAction: TimelineAction = {
+                ...actionToSplit,
+                id: generateActionId(),
+                start: splitTime,
+                minStart: splitTime,
+              }
+
+              const newActions = row.actions.flatMap((action) =>
+                action.id === actionId ? [leftAction, rightAction] : [action],
+              )
+
+              setSelectedActionId(null)
+
+              return { ...row, actions: newActions }
+            }
+            return row
+          }),
+        )
+      },
+      [],
+    )
+
+    const handleDeleteAction = useCallback(
+      (actionId: string) => {
+        if (!actionId) return
+
+        const trimRow = editorData.find((row) => row.id === rowIds.videoTrim)
+        const canDelete = trimRow && trimRow.actions.length > 1
+
+        if (!canDelete) {
+          return
+        }
+
+        setEditorData((prevData) =>
+          prevData.map((row) => {
+            if (row.id === rowIds.videoTrim) {
+              if (row.actions.length > 1) {
+                const newActions = row.actions.filter(
+                  (action) => action.id !== actionId,
+                )
+
+                setSelectedActionId(null)
+
+                return { ...row, actions: newActions }
+              }
+            }
+            return row
+          }),
+        )
+      },
+      [editorData],
+    )
+
+    useEffect(() => {
+      function handleKeyDown(evt: KeyboardEvent) {
+        if (evt.key == 'Backspace' || evt.key == 'Delete') {
+          handleDeleteAction?.(selectedActionId!)
+        }
+      }
+      if (selectedActionId) {
+        window.addEventListener('keydown', handleKeyDown)
+      } else {
+        window.removeEventListener('keydown', handleKeyDown)
+      }
+      return () => {
+        window.removeEventListener('keydown', handleKeyDown)
+      }
+    }, [handleDeleteAction, selectedActionId])
 
     return (
-      <Timeline
-        key={id}
-        ref={forwardedRef}
-        editorData={editorData}
-        effects={effects}
-        onChange={setEditorData}
-        autoScroll
-        scaleWidth={scales.scaleWidth}
-        scale={scales.scale}
-        startLeft={scales.startLeft}
-        style={{
-          width: '100%',
-          height: '125px',
-          borderRadius: '10px',
-          ...(style ?? {}),
-        }}
-        getActionRender={(action, row) => {
-          if (action.effectId === effects.effectVideoBoundary.id) {
-            return <BoundaryRow action={action} row={row} />
-          } else if (action.effectId === effects.effectVideoTrim.id) {
-            return <TrimRow action={action} row={row} />
-          }
-        }}
-        {...props}
-      />
+      <div className="space-y-2">
+        <Timeline
+          key={id}
+          ref={forwardedRef}
+          editorData={editorData}
+          effects={effects}
+          onChange={setEditorData}
+          autoScroll
+          scaleWidth={scales.scaleWidth}
+          scale={scales.scale}
+          startLeft={scales.startLeft}
+          style={{
+            width: '100%',
+            height: '125px',
+            borderRadius: '10px',
+            ...(style ?? {}),
+          }}
+          getActionRender={(action, row) => {
+            if (action.effectId === effects.effectVideoBoundary.id) {
+              return <BoundaryRow action={action} row={row} />
+            } else if (action.effectId === effects.effectVideoTrim.id) {
+              return (
+                <TrimRow
+                  action={action}
+                  row={row}
+                  onSplit={handleSplitAction}
+                  onClick={setSelectedActionId}
+                  isSelected={selectedActionId === action.id}
+                />
+              )
+            }
+          }}
+          {...props}
+        />
+      </div>
     )
   },
 )
