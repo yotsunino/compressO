@@ -2,16 +2,18 @@ import { motion } from 'framer-motion'
 import { useMemo } from 'react'
 import { useSnapshot } from 'valtio'
 
+import Button from '@/components/Button'
 import Code from '@/components/Code'
 import Divider from '@/components/Divider'
 import Icon from '@/components/Icon'
 import Image from '@/components/Image'
 import { CircularProgress } from '@/components/Progress'
-import { zoomInTransition } from '@/utils/animation'
+import { slideDownTransition, zoomInTransition } from '@/utils/animation'
 import { formatDuration } from '@/utils/string'
 import { cn } from '@/utils/tailwind'
 import styles from './styles.module.css'
 import Thumbnail from './Thumbnail'
+import VideoInfo from './VideoInfo'
 import { appProxy } from '../-state'
 
 type PreviewSingleVideoProps = {
@@ -22,7 +24,7 @@ function PreviewSingleVideo({ videoIndex }: PreviewSingleVideoProps) {
   if (videoIndex < 0) return
 
   const {
-    state: { videos, isCompressing, isProcessCompleted },
+    state: { videos, isCompressing, isProcessCompleted, showVideoInfo },
   } = useSnapshot(appProxy)
   const video = videos.length > 0 ? videos[videoIndex] : null
   const {
@@ -157,8 +159,43 @@ function PreviewSingleVideo({ videoIndex }: PreviewSingleVideoProps) {
                 </>
               ) : null}
             </>
+            <>
+              <Divider orientation="vertical" className="h-10" />{' '}
+              <div>
+                <Button
+                  onPress={() => {
+                    appProxy.state.showVideoInfo = true
+                  }}
+                  size="sm"
+                >
+                  View Full Info
+                </Button>
+              </div>
+            </>
           </section>
         )
+      ) : null}
+      {showVideoInfo ? (
+        <motion.div
+          className="absolute right-0 bottom-0 left-0 top-0 w-full h-full z-[10] bg-white1 dark:bg-black1 p-6"
+          {...slideDownTransition}
+        >
+          <div className="2xl:max-w-[50vw] mx-auto">
+            <VideoInfo videoIndex={videoIndex} />
+          </div>
+          <div className="absolute top-4 right-4">
+            <Button
+              size="sm"
+              isIconOnly
+              radius="full"
+              onPress={() => {
+                appProxy.state.showVideoInfo = false
+              }}
+            >
+              <Icon name="cross" />
+            </Button>
+          </div>
+        </motion.div>
       ) : null}
     </motion.div>
   ) : (

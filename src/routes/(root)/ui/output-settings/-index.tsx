@@ -75,6 +75,7 @@ function OutputSettings({ videoIndex }: OutputSettingsProps) {
     appProxy.clearSnapshots()
     appProxy.state.isBatchCompressionCancelled = false
     appProxy.state.selectedVideoIndexForCustomization = -1
+    appProxy.state.showVideoInfo = false
     for (const index in appProxy.state.videos) {
       appProxy.state.videos[index].config.isVideoTransformEditMode = false
       appProxy.state.videos[index].config.isVideoTrimEditMode = false

@@ -211,7 +211,7 @@ function VideoThumbnail({ videoIndex }: VideoThumbnailProps) {
 
   return (
     <div className="relative w-full flex items-center justify-center">
-      <div className="relative w-full">
+      <div className="relative w-full px-4">
         {previewMode === 'video' && videoPath ? (
           <VideoPlayer
             ref={playerRef}

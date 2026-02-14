@@ -173,3 +173,119 @@ pub struct VideoMetadataConfig {
     pub genre: Option<String>,
     pub creation_time: Option<String>,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct VideoStream {
+    // Basic codec info
+    pub codec: String,
+    pub codec_long_name: String,
+    pub profile: String,
+    pub codec_type: String,
+
+    // Dimensions
+    pub width: u32,
+    pub height: u32,
+    pub coded_width: u32,
+    pub coded_height: u32,
+
+    // Frame rate
+    pub r_frame_rate: String,
+    pub avg_frame_rate: String,
+
+    // Pixel format and color
+    pub pix_fmt: String,
+    pub color_space: Option<String>,
+    pub color_range: Option<String>,
+    pub color_primaries: Option<String>,
+    pub color_transfer: Option<String>,
+    pub chroma_location: Option<String>,
+
+    // Bitrate and duration
+    pub bit_rate: Option<String>,
+    pub duration: Option<String>,
+
+    // Frame info
+    pub nb_frames: Option<String>,
+    pub refs: Option<u32>,
+
+    // Bitstream/codec-specific info
+    pub gop_size: Option<u32>,
+    pub level: Option<u32>,
+
+    // Other
+    pub field_order: String,
+    pub time_base: String,
+    pub rotation: Option<f64>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct AudioStream {
+    // Basic codec info
+    pub codec: String,
+    pub codec_long_name: String,
+    pub codec_type: String,
+    pub profile: Option<String>,
+
+    // Channels and layout
+    pub channels: String,
+    pub channel_layout: String,
+
+    // Sample rate and format
+    pub sample_rate: String,
+    pub sample_fmt: Option<String>,
+    pub bits_per_sample: Option<u32>,
+
+    // Bitrate and duration
+    pub bit_rate: Option<String>,
+    pub duration: Option<String>,
+
+    // Tags (language, title, etc.)
+    pub tags: Option<Vec<(String, String)>>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct SubtitleStream {
+    pub codec: String,
+    pub codec_long_name: String,
+    pub codec_type: String,
+    pub language: Option<String>,
+    pub title: Option<String>,
+    pub disposition: Disposition,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Disposition {
+    pub default: bool,
+    pub forced: bool,
+    pub attached_pic: bool,
+    pub comment: bool,
+    pub karaoke: bool,
+    pub lyrics: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Chapter {
+    pub id: u64,
+    pub time_base: String,
+    pub start: f64,
+    pub end: f64,
+    pub title: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ContainerInfo {
+    pub filename: String,
+    pub format_name: String,
+    pub format_long_name: String,
+    pub duration: Option<f64>,
+    pub size: u64,
+    pub bit_rate: Option<u64>,
+    pub nb_streams: u32,
+    pub tags: Option<Vec<(String, String)>>,
+}

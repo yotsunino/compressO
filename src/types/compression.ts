@@ -47,6 +47,95 @@ export type VideoInfo = {
   fps: number
 }
 
+export type VideoStream = {
+  codec: string
+  codecLongName: string
+  profile: string
+  codecType: string
+
+  width: number
+  height: number
+  codedWidth: number
+  codedHeight: number
+
+  rFrameRate: string
+  avgFrameRate: string
+
+  pixFmt: string
+  colorSpace: string | null
+  colorRange: string | null
+  colorPrimaries: string | null
+  colorTransfer: string | null
+  chromaLocation: string | null
+
+  bitRate: string | null
+  duration: string | null
+
+  nbFrames: string | null
+  refs: number | null
+
+  gopSize: number | null
+  level: number | null
+
+  fieldOrder: string
+  timeBase: string
+  rotation: number | null
+}
+
+export type AudioStream = {
+  codec: string
+  codecLongName: string
+  codecType: string
+  profile: string | null
+
+  channels: string
+  channelLayout: string
+
+  sampleRate: string
+  sampleFmt: string | null
+  bitsPerSample: number | null
+
+  bitRate: string | null
+  duration: string | null
+
+  tags: [string, string][] | null
+}
+
+export type SubtitleStream = {
+  codec: string
+  codecLongName: string
+  codecType: string
+  language: string | null
+  title: string | null
+  disposition: {
+    default: boolean
+    forced: boolean
+    attached_pic: boolean
+    comment: boolean
+    karaoke: boolean
+    lyrics: boolean
+  }
+}
+
+export type Chapter = {
+  id: number
+  timeBase: string
+  start: number
+  end: number
+  title: string | null
+}
+
+export type ContainerInfo = {
+  filename: string
+  formatName: string
+  formatLongName: string
+  duration: number | null
+  size: number
+  bitRate: number | null
+  nbStreams: number
+  tags: [string, string][] | null
+}
+
 export type VideoTransforms = {
   crop: { top: number; left: number; width: number; height: number }
   rotate: number

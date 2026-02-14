@@ -3,8 +3,8 @@ use crate::{
         BatchCompressionResult, CompressionResult, TrimSegment, VideoCompressionConfig, VideoInfo,
         VideoMetadataConfig, VideoThumbnail,
     },
-    ffprobe,
     ffmpeg::{self},
+    ffprobe,
     fs::delete_stale_files,
 };
 use serde_json::Value;

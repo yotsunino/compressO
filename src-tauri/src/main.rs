@@ -13,6 +13,11 @@ use lib::tauri_commands::{
         __cmd__get_video_info, compress_video, compress_videos_batch, generate_video_thumbnail,
         get_video_info,
     },
+    ffprobe::{
+        __cmd__get_audio_streams, __cmd__get_chapters, __cmd__get_container_info,
+        __cmd__get_subtitle_streams, __cmd__get_video_streams, get_audio_streams, get_chapters,
+        get_container_info, get_subtitle_streams, get_video_streams,
+    },
     file_manager::{__cmd__show_item_in_file_manager, show_item_in_file_manager},
     fs::{
         __cmd__copy_file_to_clipboard, __cmd__delete_cache, __cmd__delete_file,
@@ -135,7 +140,12 @@ async fn main() {
             delete_cache,
             show_item_in_file_manager,
             copy_file_to_clipboard,
-            read_files_from_clipboard
+            read_files_from_clipboard,
+            get_audio_streams,
+            get_chapters,
+            get_container_info,
+            get_subtitle_streams,
+            get_video_streams,
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application")

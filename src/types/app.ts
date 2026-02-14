@@ -104,4 +104,5 @@ export type App = {
   savedPath?: string
   selectedVideoIndexForCustomization: number
   commonConfigForBatchCompression: VideoConfig
+  showVideoInfo?: boolean
 }
