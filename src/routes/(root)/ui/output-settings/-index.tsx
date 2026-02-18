@@ -328,7 +328,9 @@ function OutputSettings({ videoIndex }: OutputSettingsProps) {
               <>
                 <AudioTracks videoIndex={videoIndex} />
               </>
-              {hasNoAudio ? <p className="text-xs">No audio found</p> : null}
+              {hasNoAudio ? (
+                <p className="text-xs text-center mt-1">No audio found</p>
+              ) : null}
             </>
           ) : null}
           {tab === 'metadata' ? (
