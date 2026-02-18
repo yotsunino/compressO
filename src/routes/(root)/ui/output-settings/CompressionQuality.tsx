@@ -132,7 +132,7 @@ function CompressionQuality({ videoIndex }: CompressionQualityProps) {
                   label: 'High',
                 },
               ]}
-              className="mb-8"
+              className="mb-8 w-[95%] mx-auto"
               classNames={{ mark: 'text-xs' }}
               getValue={(value) => {
                 const val = Array.isArray(value) ? value?.[0] : +value

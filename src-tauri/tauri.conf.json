@@ -12,14 +12,34 @@
     "longDescription": "Compress any video file to a tiny size.",
     "shortDescription": "Compress any video to a tiny size",
     "active": true,
-    "category": "DeveloperTool",
+    "category": "Video",
     "copyright": "Code For Real",
     "targets": ["deb", "appimage", "msi", "dmg"],
     "externalBin": ["./bin/compresso_ffmpeg", "./bin/compresso_ffprobe"],
     "fileAssociations": [
       {
-        "ext": ["mp4", "mov", "mkv", "webm", "avi"],
-        "mimeType": "video/*",
+        "ext": ["mp4"],
+        "mimeType": "video/mp4",
+        "role": "Editor"
+      },
+      {
+        "ext": ["mov"],
+        "mimeType": "video/quicktime",
+        "role": "Editor"
+      },
+      {
+        "ext": ["mkv"],
+        "mimeType": "video/x-matroska",
+        "role": "Editor"
+      },
+      {
+        "ext": ["webm"],
+        "mimeType": "video/webm",
+        "role": "Editor"
+      },
+      {
+        "ext": ["avi"],
+        "mimeType": "video/x-msvideo",
         "role": "Editor"
       }
     ],
@@ -45,7 +65,8 @@
     "resources": [],
     "linux": {
       "deb": {
-        "depends": []
+        "depends": [],
+        "desktopTemplate": "compressO.desktop.template"
       }
     }
   },

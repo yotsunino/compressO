@@ -1,5 +1,7 @@
+use std::path::PathBuf;
+
 use clipboard_rs::{Clipboard, ClipboardContext};
-use tauri::Manager;
+use tauri::{AppHandle, Manager, Url};
 use tauri_plugin_fs::FsExt;
 
 use crate::{
@@ -63,21 +65,7 @@ pub async fn read_files_from_clipboard(
     let ctx = ClipboardContext::new().map_err(|err| err.to_string())?;
     let paths = ctx.get_files().map_err(|err| err.to_string())?;
 
-    let fs_scope = app_handle.fs_scope();
-    let asset_scope = app_handle.asset_protocol_scope();
-
-    let mut all_files = Vec::new();
-
-    for path in &paths {
-        let files = collect_files(path, Some(0)).map_err(|err| err.to_string())?;
-        for file in &files {
-            let _ = fs_scope.allow_file(file);
-            let _ = asset_scope.allow_file(file);
-        }
-        all_files.extend(files);
-    }
-
-    Ok(all_files)
+    Ok(allow_asset_scopes(&app_handle, paths, Some(0))?)
 }
 
 #[tauri::command]
@@ -85,17 +73,45 @@ pub async fn read_files_from_paths(
     app_handle: tauri::AppHandle,
     paths: Vec<String>,
 ) -> Result<Vec<String>, String> {
+    Ok(allow_asset_scopes(&app_handle, paths, Some(0))?)
+}
+
+/// Allow asset scopes to all the files within paths with configurable depth
+///
+/// # Arguments
+/// * `paths` - The file or directory paths to allow scopes
+/// * `depth` - Optional depth level for directory traversal. See `@src-tauri/src/lib/fs.rs#collect_files` depth param for more info.
+///
+/// # Returns
+/// A vector of file paths where asset scopes are applied
+pub fn allow_asset_scopes(
+    app_handle: &AppHandle,
+    paths: Vec<String>,
+    depth: Option<u32>,
+) -> Result<Vec<String>, String> {
     let fs_scope = app_handle.fs_scope();
     let asset_scope = app_handle.asset_protocol_scope();
 
     let mut all_files = Vec::new();
 
     for path in &paths {
-        let files = collect_files(path, Some(0)).map_err(|err| err.to_string())?;
+        let path_buf: PathBuf = if path.starts_with("file://") {
+            Url::parse(path)
+                .map_err(|e| e.to_string())?
+                .to_file_path()
+                .map_err(|_| "Invalid file URL".to_string())?
+        } else {
+            PathBuf::from(path)
+        };
+
+        let files =
+            collect_files(path_buf.to_str().unwrap(), depth).map_err(|err| err.to_string())?;
+
         for file in &files {
             let _ = fs_scope.allow_file(file);
             let _ = asset_scope.allow_file(file);
         }
+
         all_files.extend(files);
     }
 

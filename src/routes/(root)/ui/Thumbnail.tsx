@@ -9,6 +9,7 @@ import Button from '@/components/Button'
 import Icon from '@/components/Icon'
 import Image from '@/components/Image'
 import useTimelineEngine from '@/components/Timeline/useTimelineEngine'
+import Tooltip from '@/components/Tooltip'
 import VideoPlayer, { VideoPlayerRef } from '@/components/VideoPlayer'
 import { generateVideoThumbnail } from '@/tauri/commands/ffmpeg'
 import VideoTrimmerTimeline, {
@@ -136,12 +137,14 @@ function VideoThumbnail({ videoIndex }: VideoThumbnailProps) {
         async () => {
           const videoSnapshot = appProxy.state.videos[videoIndex]
           if (
-            playerRef.current &&
+            (playerRef.current || trimmerRef.current) &&
             videoSnapshot.config.isVideoTransformEditMode
           ) {
             const { pathRaw: videoPathRaw } = videoSnapshot
 
-            const currentTime = playerRef.current.playerRef?.getCurrentTime?.()
+            const currentTime = playerRef.current
+              ? playerRef.current.playerRef?.getCurrentTime?.()
+              : trimmerRef.current?.getTime?.()
             if (currentTime && videoPathRaw) {
               try {
                 const targetDuration =
@@ -297,18 +300,22 @@ function VideoThumbnail({ videoIndex }: VideoThumbnailProps) {
               }}
             />
             {videoDuration && !isProcessCompleted ? (
-              <Button
-                size="sm"
-                onPress={() => {
-                  handleRegenerateThumbnail()
-                }}
-                isDisabled={isThumbnailRegenerating}
-                isLoading={isThumbnailRegenerating}
-                className="absolute bottom-4 right-4 z-[10] !p-0 !min-h-0 text-[10px] !h-[unset] !px-2 !py-1"
-              >
-                Regenerate Thumbnail
-                <Icon name="image" size={20} />
-              </Button>
+              <div className="absolute bottom-4 right-4 z-[10]">
+                <Tooltip content="Regenerate Thumbnail">
+                  <Button
+                    size="sm"
+                    isIconOnly
+                    onPress={() => {
+                      handleRegenerateThumbnail()
+                    }}
+                    isDisabled={isThumbnailRegenerating}
+                    isLoading={isThumbnailRegenerating}
+                    className="!p-0 !min-h-0 text-[10px] !h-[unset] !px-2 !py-1"
+                  >
+                    <Icon name="image" size={20} />
+                  </Button>
+                </Tooltip>
+              </div>
             ) : null}
           </div>
         )}

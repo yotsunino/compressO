@@ -32,8 +32,6 @@ use lib::tauri_commands::{
 use lib::tauri_commands::file_manager::DbusState;
 use std::path::PathBuf;
 #[cfg(target_os = "linux")]
-use std::sync::Mutex;
-
 #[cfg(debug_assertions)]
 const LOG_TARGETS: [LogTarget; 1] = [LogTarget::new(LogTargetKind::Stdout)];
 
@@ -169,7 +167,7 @@ async fn main() {
                     if maybe_file.starts_with('-') {
                         continue;
                     }
-                    if let Ok(url) = url::Url::parse(&maybe_file) {
+                    if let Ok(url) = Url::parse(&maybe_file) {
                         if let Ok(_path) = url.to_file_path() {
                             urls.push(url);
                         }
