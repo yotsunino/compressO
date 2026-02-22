@@ -268,11 +268,8 @@ function VideoThumbnail({ videoIndex }: VideoThumbnailProps) {
             }}
             onProgress={({ playedSeconds }: OnProgressProps) => {
               if (playerRef.current?.playerRef) {
-                const internalPlayer = playerRef.current.getInternalPlayer()
-                if (internalPlayer && !internalPlayer.paused) {
-                  setTimelineTime(playedSeconds)
-                  autoScrollCursorToCurrentTime(scales)
-                }
+                setTimelineTime(playedSeconds)
+                autoScrollCursorToCurrentTime(scales)
               }
             }}
             // ffmpeg duration is sometimes incorrect, so force set this duration to particular video

@@ -1,6 +1,7 @@
 import { Timeline, TimelineState } from '@xzdarcy/react-timeline-editor'
 import {
   forwardRef,
+  memo,
   useCallback,
   useEffect,
   useId,
@@ -57,6 +58,9 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
       enableTimelinePlayer,
       onProgress,
       onDuration,
+      onPlay,
+      onPause,
+      onEnded,
       ...props
     },
     forwardedRef,
@@ -237,9 +241,18 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
             width="100%"
             height="100%"
             playing={isPlaying}
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => setIsPlaying(false)}
-            onEnded={() => setIsPlaying(false)}
+            onPlay={() => {
+              onPlay?.()
+              setIsPlaying(true)
+            }}
+            onPause={() => {
+              onPause?.()
+              setIsPlaying(false)
+            }}
+            onEnded={() => {
+              onEnded?.()
+              setIsPlaying(false)
+            }}
             onProgress={(progress) => {
               onProgress?.(progress)
               if (timelinePlayerRef.current) {
@@ -333,4 +346,4 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
   },
 )
 
-export default VideoPlayer
+export default memo(VideoPlayer)

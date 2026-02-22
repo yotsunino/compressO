@@ -14,6 +14,7 @@ import {
   FC,
   ForwardedRef,
   forwardRef,
+  memo,
   useCallback,
   useEffect,
   useState,
@@ -463,4 +464,4 @@ const VideoTrimmerTimeline = forwardRef(
   },
 )
 
-export default VideoTrimmerTimeline
+export default memo(VideoTrimmerTimeline)
