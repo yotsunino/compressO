@@ -20,7 +20,7 @@ export async function getLatestRelease(): Promise<GitHubRelease> {
   );
 
   if (!response.ok) {
-    throw new Error(`GitHub API error: ${response.statusText}`);
+    return {} as any
   }
 
   return response.json();
