@@ -182,6 +182,9 @@ export type App = {
   isSaved: boolean
   savedPath?: string
   selectedMediaIndexForCustomization: number
-  commonConfigForBatchCompression: VideoConfig // TODO: Add ImageConfig
+  commonConfigForBatchCompression: {
+    videoConfig: VideoConfig
+    imageConfig: ImageConfig
+  }
   showMediaInfo?: boolean
 }

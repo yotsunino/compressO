@@ -27,7 +27,7 @@ function CompressionQuality({ mediaIndex }: CompressionQualityProps) {
       : null
   const { config } = video ?? {}
   const { quality: compressionQuality, shouldEnableQuality } =
-    config ?? commonConfigForBatchCompression ?? {}
+    config ?? commonConfigForBatchCompression.videoConfig ?? {}
 
   const [quality, setQuality] = React.useState<number>(
     compressionQuality ?? 100,
@@ -41,26 +41,31 @@ function CompressionQuality({ mediaIndex }: CompressionQualityProps) {
 
   React.useEffect(() => {
     const appSnapshot = snapshot(appProxy)
-    // TODO: Right now this quality applies for both video and image item within media. figure out what to do for this
     if (
       appSnapshot.state.media.length &&
       quality !==
-        (mediaIndex >= 0
+        (mediaIndex >= 0 && appSnapshot.state.media[mediaIndex].type === 'video'
           ? appSnapshot.state.media[mediaIndex]?.config?.quality
           : appSnapshot.state.media.length > 1
-            ? appSnapshot.state.commonConfigForBatchCompression?.quality
+            ? appSnapshot.state.commonConfigForBatchCompression?.videoConfig
+                ?.quality
             : undefined)
     ) {
       if (debounceRef.current) {
         clearTimeout(debounceRef.current)
       }
       debounceRef.current = setTimeout(() => {
-        if (mediaIndex >= 0 && appProxy.state.media[mediaIndex]?.config) {
+        if (
+          mediaIndex >= 0 &&
+          appProxy.state.media[mediaIndex].type === 'video' &&
+          appProxy.state.media[mediaIndex]?.config
+        ) {
           appProxy.state.media[mediaIndex].config.quality = quality
           appProxy.state.media[mediaIndex].isConfigDirty = true
         } else {
           if (appProxy.state.media.length > 1) {
-            appProxy.state.commonConfigForBatchCompression.quality = quality
+            appProxy.state.commonConfigForBatchCompression.videoConfig.quality =
+              quality
             normalizeBatchVideosConfig()
           }
         }
@@ -97,9 +102,8 @@ function CompressionQuality({ mediaIndex }: CompressionQualityProps) {
         !shouldEnableQuality
       appProxy.state.media[mediaIndex].isConfigDirty = true
     } else {
-      // TODO: adjust this for all media types
       if (appProxy.state.media.length > 1) {
-        appProxy.state.commonConfigForBatchCompression.shouldEnableQuality =
+        appProxy.state.commonConfigForBatchCompression.videoConfig.shouldEnableQuality =
           !shouldEnableQuality
         normalizeBatchVideosConfig()
       }

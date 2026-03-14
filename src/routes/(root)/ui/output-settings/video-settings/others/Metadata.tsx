@@ -37,7 +37,7 @@ function Metadata({ mediaIndex }: MetadataProps) {
       : null
   const { config } = video ?? {}
   const { shouldPreserveMetadata, metadataConfig } =
-    config ?? commonConfigForBatchCompression ?? {}
+    config ?? commonConfigForBatchCompression.videoConfig ?? {}
 
   const updateMetadataField = useCallback(
     (
@@ -69,25 +69,26 @@ function Metadata({ mediaIndex }: MetadataProps) {
 
         appProxy.state.media[mediaIndex].isConfigDirty = true
       } else {
-        // TODO: adjust this for all media types
         if (appProxy.state.media.length > 1) {
           if (
-            !appProxy.state?.commonConfigForBatchCompression?.metadataConfig
+            !appProxy.state?.commonConfigForBatchCompression?.videoConfig
+              ?.metadataConfig
           ) {
-            appProxy.state.commonConfigForBatchCompression.metadataConfig =
+            appProxy.state.commonConfigForBatchCompression.videoConfig.metadataConfig =
               cloneDeep(videoMetadataConfigInitialState)
           }
-          ;(appProxy.state.commonConfigForBatchCompression.metadataConfig![
-            field
-          ] as any) = value
+          ;(appProxy.state.commonConfigForBatchCompression.videoConfig
+            .metadataConfig![field] as any) = value
 
           if (
             field === 'creationTimeRaw' &&
-            appProxy.state.commonConfigForBatchCompression?.metadataConfig
+            appProxy.state.commonConfigForBatchCompression?.videoConfig
+              ?.metadataConfig
           ) {
-            appProxy.state.commonConfigForBatchCompression.metadataConfig![
-              'creationTime'
-            ] = (value as any)?.toDate?.('')?.toISOString()
+            appProxy.state.commonConfigForBatchCompression.videoConfig
+              .metadataConfig!['creationTime'] = (value as any)
+              ?.toDate?.('')
+              ?.toISOString()
           }
 
           normalizeBatchVideosConfig()
@@ -115,17 +116,19 @@ function Metadata({ mediaIndex }: MetadataProps) {
         )
       }
     } else {
-      // TODO: adjust this for all media types
       if (appProxy.state.media.length > 1) {
-        appProxy.state.commonConfigForBatchCompression.shouldPreserveMetadata =
-          !appProxy.state.commonConfigForBatchCompression.shouldPreserveMetadata
+        appProxy.state.commonConfigForBatchCompression.videoConfig.shouldPreserveMetadata =
+          !appProxy.state.commonConfigForBatchCompression.videoConfig
+            .shouldPreserveMetadata
 
         if (
-          appProxy.state.commonConfigForBatchCompression.shouldPreserveMetadata
+          appProxy.state.commonConfigForBatchCompression.videoConfig
+            .shouldPreserveMetadata
         ) {
-          appProxy.state.commonConfigForBatchCompression.metadataConfig = null
+          appProxy.state.commonConfigForBatchCompression.videoConfig.metadataConfig =
+            null
         } else {
-          appProxy.state.commonConfigForBatchCompression.metadataConfig =
+          appProxy.state.commonConfigForBatchCompression.videoConfig.metadataConfig =
             cloneDeep(videoMetadataConfigInitialState)
         }
 

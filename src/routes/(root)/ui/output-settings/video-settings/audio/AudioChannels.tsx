@@ -30,7 +30,7 @@ function AudioChannels({ mediaIndex }: AudioChannelsProps) {
       : null
   const { config, videoInfoRaw } = video ?? {}
   const { audioConfig, shouldEnableCustomChannel } =
-    config ?? commonConfigForBatchCompression ?? {}
+    config ?? commonConfigForBatchCompression.videoConfig ?? {}
 
   const handleSwitchToggle = useCallback(() => {
     if (
@@ -54,9 +54,9 @@ function AudioChannels({ mediaIndex }: AudioChannelsProps) {
       }
       appProxy.state.media[mediaIndex].isConfigDirty = true
     } else {
-      // TODO: adjust this for all media types
       if (appProxy.state.media.length > 1) {
-        const commonConfig = appProxy.state.commonConfigForBatchCompression
+        const commonConfig =
+          appProxy.state.commonConfigForBatchCompression.videoConfig
         commonConfig.shouldEnableCustomChannel = !shouldEnableCustomChannel
         if (!commonConfig.audioConfig) {
           commonConfig.audioConfig = { volume: 100 }
@@ -99,21 +99,24 @@ function AudioChannels({ mediaIndex }: AudioChannelsProps) {
         }
         appProxy.state.media[mediaIndex].isConfigDirty = true
       } else {
-        // TODO: adjust this for all media types
         if (appProxy.state.media.length > 1) {
-          if (!appProxy.state.commonConfigForBatchCompression.audioConfig) {
-            appProxy.state.commonConfigForBatchCompression.audioConfig = {
-              volume: 100,
-            }
+          if (
+            !appProxy.state.commonConfigForBatchCompression.videoConfig
+              .audioConfig
+          ) {
+            appProxy.state.commonConfigForBatchCompression.videoConfig.audioConfig =
+              {
+                volume: 100,
+              }
           }
           if (newLayout === 'mono') {
-            appProxy.state.commonConfigForBatchCompression.audioConfig.audioChannelConfig =
+            appProxy.state.commonConfigForBatchCompression.videoConfig.audioConfig.audioChannelConfig =
               {
                 channelLayout: newLayout,
                 monoSource: { left: true, right: true },
               }
           } else {
-            appProxy.state.commonConfigForBatchCompression.audioConfig.audioChannelConfig =
+            appProxy.state.commonConfigForBatchCompression.videoConfig.audioConfig.audioChannelConfig =
               {
                 channelLayout: newLayout,
                 stereoSwapChannels: false,
@@ -148,28 +151,27 @@ function AudioChannels({ mediaIndex }: AudioChannelsProps) {
         videoConfig.audioConfig.audioChannelConfig.monoSource!.left = isSelected
         appProxy.state.media[mediaIndex].isConfigDirty = true
       } else {
-        // TODO: adjust this for all media types
         if (appProxy.state.media.length > 1) {
           if (
-            !appProxy.state.commonConfigForBatchCompression.audioConfig
-              .audioChannelConfig
+            !appProxy.state.commonConfigForBatchCompression.videoConfig
+              .audioConfig.audioChannelConfig
           ) {
-            appProxy.state.commonConfigForBatchCompression.audioConfig.audioChannelConfig =
+            appProxy.state.commonConfigForBatchCompression.videoConfig.audioConfig.audioChannelConfig =
               {
                 channelLayout: 'mono',
               }
           }
           if (
-            !appProxy.state.commonConfigForBatchCompression.audioConfig
-              .audioChannelConfig!.monoSource
+            !appProxy.state.commonConfigForBatchCompression.videoConfig
+              .audioConfig.audioChannelConfig!.monoSource
           ) {
-            appProxy.state.commonConfigForBatchCompression.audioConfig
-              .audioChannelConfig!.monoSource = {
+            appProxy.state.commonConfigForBatchCompression.videoConfig
+              .audioConfig.audioChannelConfig!.monoSource = {
               left: true,
               right: true,
             }
           }
-          appProxy.state.commonConfigForBatchCompression.audioConfig
+          appProxy.state.commonConfigForBatchCompression.videoConfig.audioConfig
             .audioChannelConfig!.monoSource!.left = isSelected
           normalizeBatchVideosConfig()
         }
@@ -201,28 +203,27 @@ function AudioChannels({ mediaIndex }: AudioChannelsProps) {
           isSelected
         appProxy.state.media[mediaIndex].isConfigDirty = true
       } else {
-        // TODO: adjust this for all media types
         if (appProxy.state.media.length > 1) {
           if (
-            !appProxy.state.commonConfigForBatchCompression.audioConfig
-              .audioChannelConfig
+            !appProxy.state.commonConfigForBatchCompression.videoConfig
+              .audioConfig.audioChannelConfig
           ) {
-            appProxy.state.commonConfigForBatchCompression.audioConfig.audioChannelConfig =
+            appProxy.state.commonConfigForBatchCompression.videoConfig.audioConfig.audioChannelConfig =
               {
                 channelLayout: 'mono',
               }
           }
           if (
-            !appProxy.state.commonConfigForBatchCompression.audioConfig
-              .audioChannelConfig!.monoSource
+            !appProxy.state.commonConfigForBatchCompression.videoConfig
+              .audioConfig.audioChannelConfig!.monoSource
           ) {
-            appProxy.state.commonConfigForBatchCompression.audioConfig
-              .audioChannelConfig!.monoSource = {
+            appProxy.state.commonConfigForBatchCompression.videoConfig
+              .audioConfig.audioChannelConfig!.monoSource = {
               left: true,
               right: true,
             }
           }
-          appProxy.state.commonConfigForBatchCompression.audioConfig
+          appProxy.state.commonConfigForBatchCompression.videoConfig.audioConfig
             .audioChannelConfig!.monoSource!.right = isSelected
           normalizeBatchVideosConfig()
         }
@@ -238,7 +239,7 @@ function AudioChannels({ mediaIndex }: AudioChannelsProps) {
       appProxy.state.media[mediaIndex]?.config
         ? appProxy.state.media[mediaIndex].config.audioConfig
             ?.audioChannelConfig
-        : appProxy.state.commonConfigForBatchCompression.audioConfig
+        : appProxy.state.commonConfigForBatchCompression.videoConfig.audioConfig
             ?.audioChannelConfig
 
     const newValue = !currentConfig?.stereoSwapChannels
@@ -257,18 +258,17 @@ function AudioChannels({ mediaIndex }: AudioChannelsProps) {
       videoConfig.audioConfig.audioChannelConfig.stereoSwapChannels = newValue
       appProxy.state.media[mediaIndex].isConfigDirty = true
     } else {
-      // TODO: adjust this for all media types
       if (appProxy.state.media.length > 1) {
         if (
-          !appProxy.state.commonConfigForBatchCompression.audioConfig
-            .audioChannelConfig
+          !appProxy.state.commonConfigForBatchCompression.videoConfig
+            .audioConfig.audioChannelConfig
         ) {
-          appProxy.state.commonConfigForBatchCompression.audioConfig.audioChannelConfig =
+          appProxy.state.commonConfigForBatchCompression.videoConfig.audioConfig.audioChannelConfig =
             {
               channelLayout: 'stereo',
             }
         }
-        appProxy.state.commonConfigForBatchCompression.audioConfig
+        appProxy.state.commonConfigForBatchCompression.videoConfig.audioConfig
           .audioChannelConfig!.stereoSwapChannels = newValue
         normalizeBatchVideosConfig()
       }

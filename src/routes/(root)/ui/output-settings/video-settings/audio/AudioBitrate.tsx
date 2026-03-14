@@ -38,7 +38,7 @@ function AudioBitrate({ mediaIndex }: AudioBitrateProps) {
       : null
   const { config, videoInfoRaw } = video ?? {}
   const { audioConfig, shouldEnableCustomBitrate } =
-    config ?? commonConfigForBatchCompression ?? {}
+    config ?? commonConfigForBatchCompression.videoConfig ?? {}
 
   const handleSwitchToggle = useCallback(() => {
     if (
@@ -60,9 +60,9 @@ function AudioBitrate({ mediaIndex }: AudioBitrateProps) {
       }
       appProxy.state.media[mediaIndex].isConfigDirty = true
     } else {
-      // TODO: adjust this for all media types
       if (appProxy.state.media.length > 1) {
-        const commonConfig = appProxy.state.commonConfigForBatchCompression
+        const commonConfig =
+          appProxy.state.commonConfigForBatchCompression.videoConfig
         commonConfig.shouldEnableCustomBitrate = !shouldEnableCustomBitrate
         if (!commonConfig.audioConfig) {
           commonConfig.audioConfig = { volume: 100 }
@@ -80,7 +80,6 @@ function AudioBitrate({ mediaIndex }: AudioBitrateProps) {
   const handleBitrateChange = useCallback(
     (value: string) => {
       const bitrate = Number.parseInt(value, 10)
-
       if (
         mediaIndex >= 0 &&
         appProxy.state.media[mediaIndex].type === 'video' &&
@@ -93,14 +92,17 @@ function AudioBitrate({ mediaIndex }: AudioBitrateProps) {
         videoConfig.audioConfig.bitrate = bitrate
         appProxy.state.media[mediaIndex].isConfigDirty = true
       } else {
-        // TODO: adjust this for all media types
         if (appProxy.state.media.length > 1) {
-          if (!appProxy.state.commonConfigForBatchCompression.audioConfig) {
-            appProxy.state.commonConfigForBatchCompression.audioConfig = {
-              volume: 100,
-            }
+          if (
+            !appProxy.state.commonConfigForBatchCompression.videoConfig
+              .audioConfig
+          ) {
+            appProxy.state.commonConfigForBatchCompression.videoConfig.audioConfig =
+              {
+                volume: 100,
+              }
           }
-          appProxy.state.commonConfigForBatchCompression.audioConfig.bitrate =
+          appProxy.state.commonConfigForBatchCompression.videoConfig.audioConfig.bitrate =
             bitrate
           normalizeBatchVideosConfig()
         }

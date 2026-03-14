@@ -23,7 +23,8 @@ function AudioVolume({ mediaIndex }: AudioVolumeProps) {
       ? media[mediaIndex]
       : null
   const { config, videoInfoRaw } = video ?? {}
-  const { audioConfig } = config ?? commonConfigForBatchCompression ?? {}
+  const { audioConfig } =
+    config ?? commonConfigForBatchCompression.videoConfig ?? {}
 
   const [volume, setVolume] = React.useState<number>(audioConfig?.volume ?? 100)
   const debounceRef = React.useRef<NodeJS.Timeout>()
@@ -41,8 +42,8 @@ function AudioVolume({ mediaIndex }: AudioVolumeProps) {
         (mediaIndex >= 0 && appSnapshot.state.media[mediaIndex].type === 'video'
           ? appSnapshot.state.media[mediaIndex]?.config?.audioConfig?.volume
           : appSnapshot.state.media.length > 1
-            ? appSnapshot.state.commonConfigForBatchCompression?.audioConfig
-                ?.volume
+            ? appSnapshot.state.commonConfigForBatchCompression?.videoConfig
+                ?.audioConfig?.volume
             : undefined)
     ) {
       if (debounceRef.current) {
@@ -63,12 +64,16 @@ function AudioVolume({ mediaIndex }: AudioVolumeProps) {
           appProxy.state.media[mediaIndex].isConfigDirty = true
         } else {
           if (appProxy.state.media.length > 1) {
-            if (!appProxy.state.commonConfigForBatchCompression.audioConfig) {
-              appProxy.state.commonConfigForBatchCompression.audioConfig = {
-                volume: 100,
-              }
+            if (
+              !appProxy.state.commonConfigForBatchCompression.videoConfig
+                .audioConfig
+            ) {
+              appProxy.state.commonConfigForBatchCompression.videoConfig.audioConfig =
+                {
+                  volume: 100,
+                }
             }
-            appProxy.state.commonConfigForBatchCompression.audioConfig.volume =
+            appProxy.state.commonConfigForBatchCompression.videoConfig.audioConfig.volume =
               volume
             normalizeBatchVideosConfig()
           }

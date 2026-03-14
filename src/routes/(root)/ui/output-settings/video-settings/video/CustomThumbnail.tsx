@@ -41,7 +41,7 @@ function CustomThumbnail({ mediaIndex }: CustomThumbnailProps) {
     customThumbnailPath,
     shouldEnableCustomThumbnail,
     convertToExtension,
-  } = config ?? commonConfigForBatchCompression ?? {}
+  } = config ?? commonConfigForBatchCompression.videoConfig ?? {}
 
   const thumbnailFileName = customThumbnailPath
     ? customThumbnailPath.split(/[/\\]/).pop()
@@ -69,9 +69,8 @@ function CustomThumbnail({ mediaIndex }: CustomThumbnailProps) {
           appProxy.state.media[mediaIndex].config.customThumbnailPath = filePath
           appProxy.state.media[mediaIndex].isConfigDirty = true
         } else {
-          // TODO: adjust this for all media types
           if (appProxy.state.media.length > 1) {
-            appProxy.state.commonConfigForBatchCompression.customThumbnailPath =
+            appProxy.state.commonConfigForBatchCompression.videoConfig.customThumbnailPath =
               filePath
             normalizeBatchVideosConfig()
           }
@@ -91,9 +90,8 @@ function CustomThumbnail({ mediaIndex }: CustomThumbnailProps) {
       appProxy.state.media[mediaIndex].config.customThumbnailPath = ''
       appProxy.state.media[mediaIndex].isConfigDirty = true
     } else {
-      // TODO: adjust this for all media types
       if (appProxy.state.media.length > 1) {
-        appProxy.state.commonConfigForBatchCompression.customThumbnailPath =
+        appProxy.state.commonConfigForBatchCompression.videoConfig.customThumbnailPath =
           null
         normalizeBatchVideosConfig()
       }
@@ -104,16 +102,15 @@ function CustomThumbnail({ mediaIndex }: CustomThumbnailProps) {
     (isSelected: boolean) => {
       if (
         mediaIndex >= 0 &&
-        appProxy.state.media[mediaIndex].type == 'video' &&
+        appProxy.state.media[mediaIndex].type === 'video' &&
         appProxy.state.media[mediaIndex]?.config
       ) {
         appProxy.state.media[mediaIndex].config.shouldEnableCustomThumbnail =
           isSelected
         appProxy.state.media[mediaIndex].isConfigDirty = true
       } else {
-        // TODO: adjust this for all media types
         if (appProxy.state.media.length > 1) {
-          appProxy.state.commonConfigForBatchCompression.shouldEnableCustomThumbnail =
+          appProxy.state.commonConfigForBatchCompression.videoConfig.shouldEnableCustomThumbnail =
             isSelected
           normalizeBatchVideosConfig()
         }

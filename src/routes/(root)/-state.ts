@@ -74,7 +74,10 @@ const appInitialState: App = {
   isSaving: false,
   isSaved: false,
   selectedMediaIndexForCustomization: -1,
-  commonConfigForBatchCompression: videoConfigInitialState,
+  commonConfigForBatchCompression: {
+    videoConfig: videoConfigInitialState,
+    imageConfig: imageConfigInitialState,
+  },
 }
 
 const snapshotMoment = {
@@ -127,15 +130,21 @@ export const appProxy: AppProxy = proxy({
 })
 
 /**
- * Normalizes the individual non-dirty video config to match with batch config.
+ * Normalizes the individual non-dirty media config to match with batch config.
  */
 export function normalizeBatchVideosConfig() {
   if (appProxy.state.media.length > 1) {
     for (const index in appProxy.state.media) {
       if (!appProxy.state.media[index]?.isConfigDirty) {
-        appProxy.state.media[index].config = cloneDeep(
-          appProxy.state.commonConfigForBatchCompression,
-        )
+        if (appProxy.state.media[index].type === 'video') {
+          appProxy.state.media[index].config = cloneDeep(
+            appProxy.state.commonConfigForBatchCompression.videoConfig,
+          )
+        } else if (appProxy.state.media[index].type === 'image') {
+          appProxy.state.media[index].config = cloneDeep(
+            appProxy.state.commonConfigForBatchCompression.imageConfig,
+          )
+        }
       }
     }
   }

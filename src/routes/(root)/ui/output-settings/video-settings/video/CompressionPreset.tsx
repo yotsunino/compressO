@@ -45,7 +45,7 @@ function CompressionPreset({ mediaIndex }: CompressionPresetProps) {
       : null
   const { config } = video ?? {}
   const { presetName, shouldDisableCompression } =
-    config ?? commonConfigForBatchCompression ?? {}
+    config ?? commonConfigForBatchCompression.videoConfig ?? {}
 
   const handleSwitchToggle = useCallback(() => {
     if (
@@ -58,8 +58,7 @@ function CompressionPreset({ mediaIndex }: CompressionPresetProps) {
       appProxy.state.media[mediaIndex].isConfigDirty = true
     } else {
       if (appProxy.state.media.length > 1) {
-        // TODO: adjust this for all media types
-        appProxy.state.commonConfigForBatchCompression.shouldDisableCompression =
+        appProxy.state.commonConfigForBatchCompression.videoConfig.shouldDisableCompression =
           !shouldDisableCompression
         normalizeBatchVideosConfig()
       }
@@ -77,9 +76,9 @@ function CompressionPreset({ mediaIndex }: CompressionPresetProps) {
           appProxy.state.media[mediaIndex].config.presetName = value
           appProxy.state.media[mediaIndex].isConfigDirty = true
         } else {
-          // TODO: adjust this for all media types
           if (appProxy.state.media.length > 1) {
-            appProxy.state.commonConfigForBatchCompression.presetName = value
+            appProxy.state.commonConfigForBatchCompression.videoConfig.presetName =
+              value
             normalizeBatchVideosConfig()
           }
         }

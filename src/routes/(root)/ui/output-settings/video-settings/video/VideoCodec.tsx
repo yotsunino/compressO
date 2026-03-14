@@ -71,7 +71,7 @@ function VideoCodec({ mediaIndex }: VideoCodecProps) {
       : null
   const { config } = video ?? {}
   const { shouldEnableCustomVideoCodec, customVideoCodec, convertToExtension } =
-    config ?? commonConfigForBatchCompression ?? {}
+    config ?? commonConfigForBatchCompression.videoConfig ?? {}
 
   const currentExtension = convertToExtension ?? 'mp4'
 
@@ -93,9 +93,8 @@ function VideoCodec({ mediaIndex }: VideoCodecProps) {
         ) {
           appProxy.state.media[mediaIndex].config.customVideoCodec = undefined
         } else {
-          // TODO: adjust this for all media types
           if (appProxy.state.media.length > 1) {
-            appProxy.state.commonConfigForBatchCompression.customVideoCodec =
+            appProxy.state.commonConfigForBatchCompression.videoConfig.customVideoCodec =
               undefined
           }
         }
@@ -118,9 +117,8 @@ function VideoCodec({ mediaIndex }: VideoCodecProps) {
         !shouldEnableCustomVideoCodec
       appProxy.state.media[mediaIndex].isConfigDirty = true
     } else {
-      // TODO: adjust this for all media types
       if (appProxy.state.media.length > 1) {
-        appProxy.state.commonConfigForBatchCompression.shouldEnableCustomVideoCodec =
+        appProxy.state.commonConfigForBatchCompression.videoConfig.shouldEnableCustomVideoCodec =
           !shouldEnableCustomVideoCodec
         normalizeBatchVideosConfig()
       }
@@ -137,9 +135,8 @@ function VideoCodec({ mediaIndex }: VideoCodecProps) {
         appProxy.state.media[mediaIndex].config.customVideoCodec = value
         appProxy.state.media[mediaIndex].isConfigDirty = true
       } else {
-        // TODO: adjust this for all media types
         if (appProxy.state.media.length > 1) {
-          appProxy.state.commonConfigForBatchCompression.customVideoCodec =
+          appProxy.state.commonConfigForBatchCompression.videoConfig.customVideoCodec =
             value
           normalizeBatchVideosConfig()
         }

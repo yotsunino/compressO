@@ -93,7 +93,7 @@ function AudioCodec({ mediaIndex }: AudioCodecProps) {
     customAudioCodec,
     convertToExtension,
     audioConfig,
-  } = config ?? commonConfigForBatchCompression ?? {}
+  } = config ?? commonConfigForBatchCompression.videoConfig ?? {}
 
   const currentExtension = convertToExtension ?? 'mp4'
 
@@ -115,7 +115,7 @@ function AudioCodec({ mediaIndex }: AudioCodecProps) {
           appProxy.state.media[mediaIndex].config.customAudioCodec = undefined
         } else {
           if (appProxy.state.media.length > 1) {
-            appProxy.state.commonConfigForBatchCompression.customAudioCodec =
+            appProxy.state.commonConfigForBatchCompression.videoConfig.customAudioCodec =
               undefined
           }
         }
@@ -138,9 +138,8 @@ function AudioCodec({ mediaIndex }: AudioCodecProps) {
         !shouldEnableCustomAudioCodec
       appProxy.state.media[mediaIndex].isConfigDirty = true
     } else {
-      // TODO: adjust this for all media types
       if (appProxy.state.media.length > 1) {
-        appProxy.state.commonConfigForBatchCompression.shouldEnableCustomAudioCodec =
+        appProxy.state.commonConfigForBatchCompression.videoConfig.shouldEnableCustomAudioCodec =
           !shouldEnableCustomAudioCodec
         normalizeBatchVideosConfig()
       }
@@ -157,9 +156,8 @@ function AudioCodec({ mediaIndex }: AudioCodecProps) {
         appProxy.state.media[mediaIndex].config.customAudioCodec = value
         appProxy.state.media[mediaIndex].isConfigDirty = true
       } else {
-        // TODO: adjust this for all media types
         if (appProxy.state.media.length > 1) {
-          appProxy.state.commonConfigForBatchCompression.customAudioCodec =
+          appProxy.state.commonConfigForBatchCompression.videoConfig.customAudioCodec =
             value
           normalizeBatchVideosConfig()
         }

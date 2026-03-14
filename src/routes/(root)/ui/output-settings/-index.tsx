@@ -25,12 +25,15 @@ function OutputSettings({ mediaIndex }: OutputSettingsProps) {
   return (
     <div>
       <div className="flex items-center justify-between w-full mb-2">
-        <p className="text-lg font-bold">
-          {media.length === 1 || selectedMediaIndexForCustomization > -1
-            ? 'Output'
-            : 'Batch'}{' '}
-          Settings
-        </p>
+        <Title
+          title={
+            media.length === 1 || selectedMediaIndexForCustomization > -1
+              ? 'Output Settings'
+              : 'Batch Settings'
+          }
+          className="text-xl font-bold"
+        />
+
         {!isCompressing ? <CompressionActions /> : null}
       </div>
       {activeTab === 'videos' ||
@@ -50,8 +53,11 @@ function OutputSettings({ mediaIndex }: OutputSettingsProps) {
               }
               startContent={<Icon name="video" size={25} />}
               classNames={{
-                base: 'bg-transparent border-1 border-zinc-200 dark:border-zinc-900 px-0!',
+                base: 'bg-transparent border-1 border-zinc-200 dark:border-zinc-900 px-2',
               }}
+              indicator={({ isOpen }) => (
+                <Icon name="caret" className={isOpen ? '-rotate-90' : ''} />
+              )}
             >
               <VideoSettings mediaIndex={mediaIndex} />
             </AccordionItem>
@@ -63,8 +69,11 @@ function OutputSettings({ mediaIndex }: OutputSettingsProps) {
               }
               startContent={<Icon name="image" size={25} />}
               classNames={{
-                base: 'bg-transparent border-1 border-zinc-200 dark:border-zinc-900 px-0!',
+                base: 'bg-transparent border-1 border-zinc-200 dark:border-zinc-900 px-2',
               }}
+              indicator={({ isOpen }) => (
+                <Icon name="caret" className={isOpen ? '-rotate-90' : ''} />
+              )}
             >
               <ImageSettings />
             </AccordionItem>

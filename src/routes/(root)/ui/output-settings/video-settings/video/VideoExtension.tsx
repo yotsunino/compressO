@@ -27,7 +27,8 @@ function VideoExtension({ mediaIndex }: VideoExtensionProps) {
       ? media[mediaIndex]
       : null
   const { config } = video ?? {}
-  const { convertToExtension } = config ?? commonConfigForBatchCompression ?? {}
+  const { convertToExtension } =
+    config ?? commonConfigForBatchCompression.videoConfig ?? {}
 
   const handleValueChange = useCallback(
     (value: keyof typeof extensions.video) => {
@@ -41,7 +42,7 @@ function VideoExtension({ mediaIndex }: VideoExtensionProps) {
           appProxy.state.media[mediaIndex].isConfigDirty = true
         } else {
           if (appProxy.state.media.length > 1) {
-            appProxy.state.commonConfigForBatchCompression.convertToExtension =
+            appProxy.state.commonConfigForBatchCompression.videoConfig.convertToExtension =
               value
             normalizeBatchVideosConfig()
           }

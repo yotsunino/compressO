@@ -30,7 +30,7 @@ function VideoFPS({ mediaIndex }: VideoFPSProps) {
       : null
   const { config, fps } = video ?? {}
   const { shouldEnableCustomFPS, customFPS } =
-    config ?? commonConfigForBatchCompression ?? {}
+    config ?? commonConfigForBatchCompression.videoConfig ?? {}
 
   const handleSwitchToggle = useCallback(() => {
     if (
@@ -42,9 +42,8 @@ function VideoFPS({ mediaIndex }: VideoFPSProps) {
         !shouldEnableCustomFPS
       appProxy.state.media[mediaIndex].isConfigDirty = true
     } else {
-      // TODO: adjust this for all media types
       if (appProxy.state.media.length > 1) {
-        appProxy.state.commonConfigForBatchCompression.shouldEnableCustomFPS =
+        appProxy.state.commonConfigForBatchCompression.videoConfig.shouldEnableCustomFPS =
           !shouldEnableCustomFPS
         normalizeBatchVideosConfig()
       }
@@ -61,9 +60,9 @@ function VideoFPS({ mediaIndex }: VideoFPSProps) {
         appProxy.state.media[mediaIndex].config.customFPS = +value
         appProxy.state.media[mediaIndex].isConfigDirty = true
       } else {
-        // TODO: adjust this for all media types
         if (appProxy.state.media.length > 1) {
-          appProxy.state.commonConfigForBatchCompression.customFPS = +value
+          appProxy.state.commonConfigForBatchCompression.videoConfig.customFPS =
+            +value
           normalizeBatchVideosConfig()
         }
       }
