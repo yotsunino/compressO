@@ -141,7 +141,16 @@ impl ImageCompressor {
                 )
                 .await?
             }
-            "webp" => self.compress_webp(image_path, quality, image_id).await?,
+            "webp" => {
+                self.compress_webp(
+                    image_path,
+                    quality,
+                    image_id,
+                    is_lossless.unwrap_or(true),
+                    strip_metadata.unwrap_or_default(),
+                )
+                .await?
+            }
             "gif" => {
                 self.compress_gif(
                     image_path,
@@ -218,38 +227,7 @@ impl ImageCompressor {
             .iter()
             .collect();
 
-        if !is_lossless {
-            std::fs::copy(image_path, &output_path).map_err(|e| e.to_string())?;
-
-            let file_path_str = output_path.to_str().unwrap();
-
-            let quality_str = quality.clamp(1, 100).to_string();
-
-            let result = self
-                .run_pngquant(&quality_str, file_path_str, image_path, strip_metadata)
-                .await;
-
-            match result {
-                Err(e) => {
-                    log::warn!(
-                        "[image] pngquant attempt 1 failed: {}. Retrying with quality 0-{}...",
-                        e,
-                        quality
-                    );
-
-                    self.run_pngquant(
-                        &format!("0-{}", quality),
-                        file_path_str,
-                        image_path,
-                        strip_metadata,
-                    )
-                    .await
-                }
-                Ok(path) => {
-                    return Ok(path);
-                }
-            }
-        } else {
+        if is_lossless {
             let mut options = Options::default();
 
             options.deflate = Deflaters::Libdeflater { compression: 12 };
@@ -280,6 +258,37 @@ impl ImageCompressor {
             }
 
             Ok(output_path)
+        } else {
+            std::fs::copy(image_path, &output_path).map_err(|e| e.to_string())?;
+
+            let file_path_str = output_path.to_str().unwrap();
+
+            let quality_str = quality.clamp(1, 100).to_string();
+
+            let result = self
+                .run_pngquant(&quality_str, file_path_str, image_path, strip_metadata)
+                .await;
+
+            match result {
+                Err(e) => {
+                    log::warn!(
+                        "[image] pngquant attempt 1 failed: {}. Retrying with quality 0-{}...",
+                        e,
+                        quality
+                    );
+
+                    self.run_pngquant(
+                        &format!("0-{}", quality),
+                        file_path_str,
+                        image_path,
+                        strip_metadata,
+                    )
+                    .await
+                }
+                Ok(path) => {
+                    return Ok(path);
+                }
+            }
         }
     }
 
@@ -336,7 +345,10 @@ impl ImageCompressor {
                         Ok(PathBuf::from(output_path))
                     }
                     Ok(_) => {
-                        let error_msg = stderr_output.as_ref().map(|s| s.trim()).unwrap_or("");
+                        let error_msg = stderr_output
+                            .as_ref()
+                            .map(|s: &String| s.trim())
+                            .unwrap_or("");
                         if !error_msg.is_empty() {
                             Err(format!("pngquant failed: {}", error_msg))
                         } else {
@@ -423,6 +435,8 @@ impl ImageCompressor {
         image_path: &str,
         quality: u8,
         image_id: &str,
+        is_lossless: bool,
+        strip_metadata: bool,
     ) -> Result<PathBuf, String> {
         let output_filename = format!("{}.webp", image_id);
         let output_path: PathBuf = [self.assets_dir.clone(), PathBuf::from(&output_filename)]
@@ -438,12 +452,20 @@ impl ImageCompressor {
         let height = img.height();
         let rgba: Vec<u8> = img.to_rgba8().into_raw();
 
-        let encoder_quality = (quality as f32 / 100.0).clamp(0.0, 1.0);
-
-        let encoder = webp::Encoder::from_rgb(&rgba, width, height);
-        let webp_data = encoder.encode(encoder_quality);
+        let webp_data = if is_lossless {
+            let encoder = webp::Encoder::from_rgba(&rgba, width, height);
+            encoder.encode_lossless()
+        } else {
+            let encoder_quality = quality.clamp(0, 100);
+            let encoder = webp::Encoder::from_rgba(&rgba, width, height);
+            encoder.encode(encoder_quality as f32)
+        };
 
         std::fs::write(&output_path, webp_data.to_vec()).map_err(|e| e.to_string())?;
+
+        if strip_metadata {
+            // No support for webp container for now
+        }
 
         Ok(output_path)
     }
