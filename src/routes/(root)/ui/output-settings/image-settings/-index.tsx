@@ -30,10 +30,9 @@ function ImageSettings({ mediaIndex }: ImageSettingsProps) {
           <Divider className="my-3" />
         </div>
       ) : null}
-      {mediaIndex >= 0 &&
-      (
-        ['png', 'jpg', 'jpeg', 'svg'] as (keyof typeof extensions.image)[]
-      ).includes(image?.extension as keyof typeof extensions.image) ? (
+      {!(['gif'] as (keyof typeof extensions.image)[]).includes(
+        image?.extension as keyof typeof extensions.image,
+      ) ? (
         <div>
           <ImageMetadata mediaIndex={mediaIndex} />
           <Divider className="my-3" />

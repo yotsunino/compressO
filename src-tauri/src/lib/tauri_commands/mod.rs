@@ -4,4 +4,5 @@ pub mod ffprobe;
 pub mod file_manager;
 pub mod fs;
 pub mod image;
+pub mod media;
 pub mod updater;

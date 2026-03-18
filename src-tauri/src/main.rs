@@ -34,6 +34,7 @@ use lib::tauri_commands::{
         __cmd__compress_images_batch, __cmd__convert_svg_to_png, compress_images_batch,
         convert_svg_to_png,
     },
+    media::{__cmd__compress_media_batch, compress_media_batch},
     updater::{
         __cmd__check_update, __cmd__download_and_install_update, check_update,
         download_and_install_update,
@@ -259,6 +260,7 @@ async fn main() {
             compress_video,
             compress_videos_batch,
             compress_images_batch,
+            compress_media_batch,
             extract_subtitle,
             generate_video_thumbnail,
             get_video_basic_info,

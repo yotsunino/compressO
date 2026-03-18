@@ -432,7 +432,11 @@ function PreviewBatchMedia() {
                             size="lg"
                             showValueLabel
                             className="absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2"
-                            value={mediaFile.compressionProgress ?? 0}
+                            value={
+                              mediaFile?.type === 'video'
+                                ? mediaFile.compressionProgress
+                                : undefined
+                            }
                             strokeWidth={3}
                             classNames={{
                               svg: 'w-20 h-20 drop-shadow-md',

@@ -10,11 +10,10 @@ import Icon from '@/components/Icon'
 import { compressMediaBatch } from '@/tauri/commands/media'
 import { VideoMetadataConfig } from '@/types/app'
 import {
-  CompressionResult,
   ImageCompressionConfig,
-  TrimSegment,
   VideoCompressionConfig,
   VideoTransformsHistory,
+  VideoTrimSegment,
 } from '@/types/compression'
 import { formatBytes } from '@/utils/fs'
 import { appProxy } from '../-state'
@@ -152,11 +151,11 @@ function StartCompression() {
                       ? (v.config.trimConfig
                           .filter((a) => a.end >= a.start)
                           .map(
-                            (action: TimelineAction): TrimSegment => ({
+                            (action: TimelineAction): VideoTrimSegment => ({
                               start: action.start,
                               end: action.end,
                             }),
-                          ) as TrimSegment[])
+                          ) as VideoTrimSegment[])
                       : null,
                   subtitlesConfig:
                     v.config?.convertToExtension !== 'webm' &&
@@ -204,12 +203,10 @@ function StartCompression() {
       appProxy.state.isCompressing = false
       appProxy.state.isProcessCompleted = true
 
-      const mediaSnapShot = snapshot(appProxy.state.media)
-      for (const index in mediaSnapShot) {
+      for (const index in appProxy.state.media) {
         if (appProxy.state.media[index].type === 'video') {
-          const video = mediaSnapShot[index]
-          const videoResult: CompressionResult | null =
-            results[video.id!] || null
+          const video = appProxy.state.media[index]
+          const videoResult = results[video.id!] || null
 
           appProxy.state.media[index].isProcessCompleted = true
           appProxy.state.media[index].compressedFile = {
@@ -225,6 +222,25 @@ function StartCompression() {
             sizeInBytes: videoResult?.fileMetadata?.size,
             size: formatBytes(videoResult?.fileMetadata?.size ?? 0),
             extension: videoResult?.fileMetadata?.extension,
+          }
+        } else if (appProxy.state.media[index].type === 'image') {
+          const image = appProxy.state.media[index]
+          const imageResult = results[image.id!] || null
+
+          appProxy.state.media[index].isProcessCompleted = true
+          appProxy.state.media[index].compressedFile = {
+            isSuccessful: !(imageResult == null),
+            fileName: imageResult?.fileName ?? image.fileName,
+            fileNameToDisplay: `${image?.fileName?.slice(
+              0,
+              -((image?.extension?.length ?? 0) + 1),
+            )}.${imageResult?.fileMetadata?.extension}`,
+            pathRaw: imageResult?.fileMetadata?.path,
+            path: core.convertFileSrc(imageResult?.fileMetadata?.path ?? ''),
+            mimeType: imageResult?.fileMetadata?.mimeType,
+            sizeInBytes: imageResult?.fileMetadata?.size,
+            size: formatBytes(imageResult?.fileMetadata?.size ?? 0),
+            extension: imageResult?.fileMetadata?.extension,
           }
         }
       }

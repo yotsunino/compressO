@@ -19,7 +19,7 @@ export const compressionPresets = {
   thunderbolt: 'thunderbolt',
 } as const
 
-export type CompressionResult = {
+export type VideoCompressionResult = {
   videoId: string
   fileName: string
   filePath: string
@@ -29,8 +29,13 @@ export type CompressionResult = {
 export enum CustomEvents {
   VideoCompressionProgress = 'VideoCompressionProgress',
   CancelInProgressCompression = 'CancelInProgressCompression',
-  BatchCompressionProgress = 'BatchCompressionProgress',
-  BatchCompressionIndividualCompressionCompletion = 'BatchCompressionIndividualCompressionCompletion',
+  BatchVideoCompressionProgress = 'BatchVideoCompressionProgress',
+  BatchVideoIndividualCompressionCompletion = 'BatchVideoIndividualCompressionCompletion',
+  ImageCompressionProgress = 'ImageCompressionProgress',
+  BatchImageCompressionProgress = 'BatchImageCompressionProgress',
+  BatchImageIndividualCompressionCompletion = 'BatchImageIndividualCompressionCompletion',
+  BatchMediaCompressionProgress = 'BatchMediaCompressionProgress',
+  BatchMediaIndividualCompressionCompletion = 'BatchMediaIndividualCompressionCompletion',
 }
 
 export type VideoCompressionProgress = {
@@ -39,9 +44,9 @@ export type VideoCompressionProgress = {
   fileName: string
   currentDuration: string
 }
-export type BatchCompressionIndividualCompressionResult = {
+export type BatchVideoIndividualCompressionResult = {
   batchId: string
-  result: CompressionResult
+  result: VideoCompressionResult
 }
 
 export type VideoThumbnail = {
@@ -161,10 +166,10 @@ export type VideoTransformsHistory =
   | { type: 'flip'; value: { horizontal: boolean; vertical: boolean } }
 
 export type BatchCompressionResult = {
-  results: Record<string, CompressionResult>
+  results: Record<string, VideoCompressionResult>
 }
 
-export type BatchCompressionProgress = {
+export type BatchVideoCompressionProgress = {
   batchId: string
   currentIndex: number
   totalCount: number
@@ -182,7 +187,7 @@ export type VideoFileMetadata = {
   fps?: number
 }
 
-export type TrimSegment = {
+export type VideoTrimSegment = {
   start: number
   end: number
 }
@@ -207,7 +212,7 @@ export type VideoCompressionConfig = {
   transformsHistory?: VideoTransformsHistory[] | null
   metadataConfig?: VideoMetadataConfig | null
   customThumbnailPath?: string | null
-  trimSegments?: TrimSegment[] | null
+  trimSegments?: VideoTrimSegment[] | null
   subtitlesConfig?: SubtitlesConfig | null
 }
 
@@ -215,7 +220,7 @@ export type ImageCompressionProgress = {
   imageId: string
   batchId: string
   fileName: string
-  currentDuration: string
+  progress: number
 }
 
 export type ImageCompressionResult = {
@@ -223,9 +228,6 @@ export type ImageCompressionResult = {
   fileName: string
   filePath: string
   fileMetadata?: FileMetadata
-  originalSize: number
-  compressedSize: number
-  compressionRatio: number
 }
 
 export type ImageCompressionConfig = {
@@ -235,4 +237,33 @@ export type ImageCompressionConfig = {
   isLossless: boolean
   quality: number
   stripMetadata: boolean
+}
+
+export type MediaItem = {
+  videoConfig?: VideoCompressionConfig
+  imageConfig?: ImageCompressionConfig
+}
+
+export type MediaCompressionProgress =
+  | ({ mediaType: 'video' } & VideoCompressionProgress)
+  | ({ mediaType: 'image' } & ImageCompressionProgress)
+
+export type MediaCompressionResult =
+  | ({ mediaType: 'video' } & VideoCompressionResult)
+  | ({ mediaType: 'image' } & ImageCompressionResult)
+
+export type BatchMediaCompressionProgress = {
+  batchId: string
+  currentIndex: number
+  totalCount: number
+  mediaProgress: MediaCompressionProgress
+}
+
+export type BatchMediaIndividualCompressionResult = {
+  batchId: string
+  result: MediaCompressionResult
+}
+
+export type MediaBatchCompressionResult = {
+  results: Record<string, MediaCompressionResult>
 }

@@ -1,7 +1,7 @@
 use crate::{
     domain::{
-        AudioConfig, BatchCompressionResult, CompressionResult, SubtitlesConfig, TrimSegment,
-        VideoCompressionConfig, VideoMetadataConfig, VideoThumbnail,
+        AudioConfig, BatchCompressionResult, SubtitlesConfig, VideoCompressionConfig,
+        VideoCompressionResult, VideoMetadataConfig, VideoThumbnail, VideoTrimSegment,
     },
     ffmpeg::{self},
     fs::delete_stale_files,
@@ -24,9 +24,9 @@ pub async fn compress_video(
     transforms_history: Option<Vec<Value>>,
     metadata_config: Option<VideoMetadataConfig>,
     custom_thumbnail_path: Option<&str>,
-    trim_segments: Option<Vec<TrimSegment>>,
+    trim_segments: Option<Vec<VideoTrimSegment>>,
     subtitles_config: Option<SubtitlesConfig>,
-) -> Result<CompressionResult, String> {
+) -> Result<VideoCompressionResult, String> {
     let mut ffmpeg = ffmpeg::FFMPEG::new(&app)?;
     if let Ok(files) =
         delete_stale_files(ffmpeg.get_asset_dir().as_str(), 24 * 60 * 60 * 1000).await

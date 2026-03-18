@@ -1,8 +1,8 @@
 use crate::domain::{
-    AudioConfig, BatchCompressionIndividualCompressionResult, BatchCompressionProgress,
-    BatchCompressionResult, CancelInProgressCompressionPayload, CompressionResult, CustomEvents,
-    SubtitlesConfig, TauriEvents, TrimSegment, VideoCompressionConfig, VideoCompressionProgress,
-    VideoMetadataConfig, VideoThumbnail,
+    AudioConfig, BatchCompressionResult, BatchVideoCompressionProgress,
+    BatchVideoIndividualCompressionResult, CancelInProgressCompressionPayload, CustomEvents,
+    SubtitlesConfig, TauriEvents, VideoCompressionConfig, VideoCompressionProgress,
+    VideoCompressionResult, VideoMetadataConfig, VideoThumbnail, VideoTrimSegment,
 };
 use crate::ffprobe::FFPROBE;
 use crate::fs::get_file_metadata;
@@ -82,9 +82,9 @@ impl FFMPEG {
         transforms_history: Option<&Vec<Value>>,
         metadata_config: Option<&VideoMetadataConfig>,
         custom_thumbnail_path: Option<&str>,
-        trim_segments: Option<&Vec<TrimSegment>>,
+        trim_segments: Option<&Vec<VideoTrimSegment>>,
         subtitles_config: Option<&SubtitlesConfig>,
-    ) -> Result<CompressionResult, String> {
+    ) -> Result<VideoCompressionResult, String> {
         if !EXTENSIONS.contains(&convert_to_extension) {
             return Err(String::from("Invalid convert to extension."));
         }
@@ -832,7 +832,7 @@ impl FFMPEG {
         };
 
         let file_metadata = get_file_metadata(&output_file.to_string_lossy().to_string());
-        Ok(CompressionResult {
+        Ok(VideoCompressionResult {
             video_id: video_id.to_owned(),
             file_name,
             file_path: output_file.display().to_string(),
@@ -846,7 +846,7 @@ impl FFMPEG {
         batch_id: &str,
         videos: Vec<VideoCompressionConfig>,
     ) -> Result<BatchCompressionResult, String> {
-        let mut results: std::collections::HashMap<String, CompressionResult> =
+        let mut results: std::collections::HashMap<String, VideoCompressionResult> =
             std::collections::HashMap::new();
         let total_count = videos.len();
 
@@ -866,14 +866,14 @@ impl FFMPEG {
                                 serde_json::from_str::<VideoCompressionProgress>(evt.payload())
                             {
                                 if progress.video_id == video_id_clone {
-                                    let batch_progress = BatchCompressionProgress {
+                                    let batch_progress = BatchVideoCompressionProgress {
                                         batch_id: batch_id_clone.to_owned(),
                                         current_index: index,
                                         total_count,
                                         video_progress: progress,
                                     };
                                     let _ = window.emit(
-                                        CustomEvents::BatchCompressionProgress.as_ref(),
+                                        CustomEvents::BatchVideoCompressionProgress.as_ref(),
                                         batch_progress,
                                     );
                                 }
@@ -935,14 +935,13 @@ impl FFMPEG {
 
                     tokio::spawn(async move {
                         if let Some(window) = app_clone2.get_webview_window("main") {
-                            let individual_compression_result: BatchCompressionIndividualCompressionResult =
-                                BatchCompressionIndividualCompressionResult {
+                            let individual_compression_result: BatchVideoIndividualCompressionResult =
+                                BatchVideoIndividualCompressionResult {
                                     batch_id: batch_id_clone2,
                                     result: result,
                                 };
                             let _ = window.emit(
-                                CustomEvents::BatchCompressionIndividualCompressionCompletion
-                                    .as_ref(),
+                                CustomEvents::BatchVideoIndividualCompressionCompletion.as_ref(),
                                 individual_compression_result,
                             );
                         }

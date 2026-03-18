@@ -1,5 +1,5 @@
 use crate::domain::{
-    CustomEvents, ImageBatchCompressionProgress, ImageBatchCompressionResult,
+    BatchImageCompressionProgress, CustomEvents, ImageBatchCompressionResult,
     ImageBatchIndividualCompressionResult, ImageCompressionConfig, ImageCompressionProgress,
     ImageCompressionResult,
 };
@@ -103,7 +103,6 @@ impl ImageCompressor {
         }
 
         let original_metadata = get_file_metadata(image_path)?;
-        let original_size = original_metadata.size;
 
         let extension = original_metadata.extension.to_lowercase();
         let output_extension = convert_to_extension.unwrap_or(&extension);
@@ -203,15 +202,12 @@ impl ImageCompressor {
 
         let compressed_metadata =
             get_file_metadata(&final_output_path.to_string_lossy().to_string())?;
-        let compressed_size = compressed_metadata.size;
 
         Ok(ImageCompressionResult {
             image_id: image_id.to_string(),
             file_name: output_filename,
             file_path: final_output_path.display().to_string(),
             file_metadata: Some(compressed_metadata),
-            original_size,
-            compressed_size,
         })
     }
 
@@ -773,14 +769,14 @@ impl ImageCompressor {
                                 serde_json::from_str::<ImageCompressionProgress>(evt.payload())
                             {
                                 if progress.image_id == image_id_clone {
-                                    let batch_progress = ImageBatchCompressionProgress {
+                                    let batch_progress = BatchImageCompressionProgress {
                                         batch_id: batch_id_clone.to_owned(),
                                         current_index: index,
                                         total_count,
                                         image_progress: progress,
                                     };
                                     let _ = window.emit(
-                                        CustomEvents::ImageBatchCompressionProgress.as_ref(),
+                                        CustomEvents::BatchImageCompressionProgress.as_ref(),
                                         batch_progress,
                                     );
                                 }
@@ -822,7 +818,7 @@ impl ImageCompressor {
                                 result,
                             };
                             let _ = window.emit(
-                                CustomEvents::ImageBatchIndividualCompressionCompletion.as_ref(),
+                                CustomEvents::BatchImageIndividualCompressionCompletion.as_ref(),
                                 individual_result,
                             );
                         }

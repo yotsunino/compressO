@@ -4,14 +4,14 @@ use strum::{AsRefStr, EnumProperty};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct TrimSegment {
+pub struct VideoTrimSegment {
     pub start: f64,
     pub end: f64,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct CompressionResult {
+pub struct VideoCompressionResult {
     pub video_id: String,
     pub file_name: String,
     pub file_path: String,
@@ -49,11 +49,13 @@ pub struct VideoThumbnail {
 pub enum CustomEvents {
     VideoCompressionProgress,
     CancelInProgressCompression,
-    BatchCompressionProgress,
-    BatchCompressionIndividualCompressionCompletion,
+    BatchVideoCompressionProgress,
+    BatchVideoIndividualCompressionCompletion,
     ImageCompressionProgress,
-    ImageBatchCompressionProgress,
-    ImageBatchIndividualCompressionCompletion,
+    BatchImageCompressionProgress,
+    BatchImageIndividualCompressionCompletion,
+    BatchMediaCompressionProgress,
+    BatchMediaIndividualCompressionCompletion,
 }
 
 #[derive(EnumProperty)]
@@ -110,12 +112,12 @@ use std::collections::HashMap;
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BatchCompressionResult {
-    pub results: HashMap<String, CompressionResult>,
+    pub results: HashMap<String, VideoCompressionResult>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct BatchCompressionProgress {
+pub struct BatchVideoCompressionProgress {
     pub batch_id: String,
     pub current_index: usize,
     pub total_count: usize,
@@ -124,9 +126,9 @@ pub struct BatchCompressionProgress {
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct BatchCompressionIndividualCompressionResult {
+pub struct BatchVideoIndividualCompressionResult {
     pub batch_id: String,
-    pub result: CompressionResult,
+    pub result: VideoCompressionResult,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -165,7 +167,7 @@ pub struct VideoCompressionConfig {
     pub metadata_config: Option<VideoMetadataConfig>,
     pub custom_thumbnail_path: Option<String>,
     pub should_enable_custom_thumbnail: Option<bool>,
-    pub trim_segments: Option<Vec<TrimSegment>>,
+    pub trim_segments: Option<Vec<VideoTrimSegment>>,
     pub subtitles_config: Option<SubtitlesConfig>,
 }
 
@@ -348,7 +350,7 @@ pub struct ImageCompressionProgress {
     pub image_id: String,
     pub batch_id: String,
     pub file_name: String,
-    pub progress: f32, // 0.0 to 1.0
+    pub progress: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -358,8 +360,6 @@ pub struct ImageCompressionResult {
     pub file_name: String,
     pub file_path: String,
     pub file_metadata: Option<FileMetadata>,
-    pub original_size: u64,
-    pub compressed_size: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -370,18 +370,7 @@ pub struct ImageCompressionConfig {
     pub convert_to_extension: Option<String>,
     pub is_lossless: Option<bool>,
     pub quality: u8, // 0-100
-    pub webp_quality: Option<u8>,
-    pub gif_quality: Option<GifQuality>,
     pub strip_metadata: Option<bool>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct GifQuality {
-    pub quality: u8, // 1-100
-    pub width: Option<u32>,
-    pub height: Option<u32>,
-    pub fast: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -392,7 +381,7 @@ pub struct ImageBatchCompressionResult {
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct ImageBatchCompressionProgress {
+pub struct BatchImageCompressionProgress {
     pub batch_id: String,
     pub current_index: usize,
     pub total_count: usize,
@@ -404,4 +393,59 @@ pub struct ImageBatchCompressionProgress {
 pub struct ImageBatchIndividualCompressionResult {
     pub batch_id: String,
     pub result: ImageCompressionResult,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaItemConfig {
+    pub video_config: Option<VideoCompressionConfig>,
+    pub image_config: Option<ImageCompressionConfig>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(tag = "mediaType", rename_all = "lowercase")]
+pub enum MediaCompressionProgress {
+    Video(VideoCompressionProgress),
+    Image(ImageCompressionProgress),
+}
+
+impl From<VideoCompressionProgress> for MediaCompressionProgress {
+    fn from(progress: VideoCompressionProgress) -> Self {
+        MediaCompressionProgress::Video(progress)
+    }
+}
+
+impl From<ImageCompressionProgress> for MediaCompressionProgress {
+    fn from(progress: ImageCompressionProgress) -> Self {
+        MediaCompressionProgress::Image(progress)
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BatchMediaCompressionProgress {
+    pub batch_id: String,
+    pub current_index: usize,
+    pub total_count: usize,
+    pub media_progress: MediaCompressionProgress,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BatchMediaIndividualCompressionResult {
+    pub batch_id: String,
+    pub result: MediaCompressionResult,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(tag = "mediaType", rename_all = "lowercase")]
+pub enum MediaCompressionResult {
+    Video(VideoCompressionResult),
+    Image(ImageCompressionResult),
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaBatchCompressionResult {
+    pub results: HashMap<String, MediaCompressionResult>,
 }
