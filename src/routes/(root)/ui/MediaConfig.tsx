@@ -42,7 +42,7 @@ function MediaConfig() {
             'relative w-full h-full px-4 py-6 rounded-xl border-2 border-zinc-200 dark:border-zinc-800',
           )}
         >
-          {selectedMediaIndexForCustomization === -1 ? (
+          {media.length > 1 && selectedMediaIndexForCustomization === -1 ? (
             <motion.div
               className="flex justify-center absolute left-1/2 top-[-16px]"
               {...zoomInTransition}

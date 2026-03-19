@@ -44,6 +44,9 @@ export interface VideoPlayerProps extends BaseReactPlayerProps {
   contextMenu?: React.ReactNode
   onSpaceKeydownForPlayPause?: () => void
   onArrowKeySeek?: (arrowKey: 'left' | 'right') => void
+  disablePlayPauseControlAtCenter?: boolean
+  autoPlay?: boolean
+  disablePlayPauseViaContainerClick?: boolean
 }
 
 const scales: TimelineScales = {
@@ -63,6 +66,9 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
       disableClosedCaptions,
       contextMenu,
       onSpaceKeydownForPlayPause,
+      disablePlayPauseControlAtCenter,
+      autoPlay,
+      disablePlayPauseViaContainerClick,
       onArrowKeySeek,
       onProgress,
       onDuration,
@@ -70,6 +76,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
       onPause,
       onEnded,
       onReady,
+
       ...props
     },
     forwardedRef,
@@ -319,7 +326,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
           if (playPauseButtonRef.current) {
             playPauseButtonRef.current.style.visibility = 'hidden'
           }
-        }, 3000)
+        }, 1000)
       } else {
         clearInterval(playPauseButtonRefIntervalId.current!)
         if (playPauseButtonRef.current) {
@@ -357,8 +364,12 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
       <div className={cn('w-full h-full', containerClassName)}>
         <div
           className="relative w-full h-full"
-          role="button"
-          onClick={togglePlayPause}
+          {...(!disablePlayPauseViaContainerClick
+            ? {
+                role: 'button',
+                onClick: togglePlayPause,
+              }
+            : {})}
           onContextMenu={(e) => {
             if (contextMenu) {
               handleContextMenu(e)
@@ -403,22 +414,27 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
             onReady={(player) => {
               onReady?.(player)
               toggleClosedCaptions(disableClosedCaptions)
+              if (autoPlay) {
+                setIsPlaying(true)
+              }
             }}
             {...props}
           />
-          <Button
-            ref={playPauseButtonRef}
-            onPress={togglePlayPause}
-            isIconOnly
-            radius="full"
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2  bg-black/30 cursor-pointer"
-          >
-            <Icon
-              name={isPlaying ? 'pause' : 'play'}
-              size={28}
-              className="text-white drop-shadow-lg"
-            />
-          </Button>
+          {!disablePlayPauseControlAtCenter ? (
+            <Button
+              ref={playPauseButtonRef}
+              onPress={togglePlayPause}
+              isIconOnly
+              radius="full"
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2  bg-black/30 cursor-pointer"
+            >
+              <Icon
+                name={isPlaying ? 'pause' : 'play'}
+                size={28}
+                className="text-white drop-shadow-lg"
+              />
+            </Button>
+          ) : null}
         </div>
         {contextMenuOpen && contextMenuPosition && contextMenu ? (
           <div

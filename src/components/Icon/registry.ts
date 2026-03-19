@@ -6,6 +6,7 @@ import Audio from '@/assets/icons/audio.svg?react'
 import Back from '@/assets/icons/back.svg?react'
 import Caret from '@/assets/icons/caret.svg?react'
 import Chevron from '@/assets/icons/chevron.svg?react'
+import Compare from '@/assets/icons/compare.svg?react'
 import Copy from '@/assets/icons/copy.svg?react'
 import Cross from '@/assets/icons/cross.svg?react'
 import CurvedArrow from '@/assets/icons/curved-arrow.svg?react'
@@ -84,6 +85,7 @@ const registry = asRegistry({
   chevron: Chevron,
   addMedia: AddMedia,
   caret: Caret,
+  compare: Compare,
 })
 
 export default registry

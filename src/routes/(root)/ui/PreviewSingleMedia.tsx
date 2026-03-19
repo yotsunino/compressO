@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
 import Button from '@/components/Button'
@@ -8,11 +8,14 @@ import Divider from '@/components/Divider'
 import Icon from '@/components/Icon'
 import Image from '@/components/Image'
 import { CircularProgress } from '@/components/Progress'
+import Switch from '@/components/Switch'
+import { Ripple } from '@/ui/Patterns/Ripple'
 import { slideUpTransition, zoomInTransition } from '@/utils/animation'
 import { formatDuration } from '@/utils/string'
 import { cn } from '@/utils/tailwind'
 import { appProxy } from '../-state'
-import Thumbnail from './MediaThumbnail'
+import MediaOutputCompareSlider from './MediaOutputCompareSlider'
+import MediaThumbnail from './MediaThumbnail'
 import styles from './styles.module.css'
 import VideoInfo from './VideoInfo'
 
@@ -34,11 +37,14 @@ function PreviewSingleMedia({ mediaIndex }: PreviewSingleMediaProps) {
     extension: mediaExtension,
     compressionProgress,
     compressedFile,
+    thumbnailPath,
   } = mediaFile ?? {}
-  const { videoDuration, fps, thumbnailPath } =
+  const { videoDuration, fps } =
     mediaFile?.type === 'video' ? (mediaFile ?? {}) : {}
   const { isVideoTransformEditMode, isVideoTrimEditMode } =
     mediaFile?.type === 'video' ? (mediaFile?.config ?? {}) : {}
+
+  const [compareOutput, setCompareOutput] = useState(true)
 
   const compressedSizeDiff: number = useMemo(
     () =>
@@ -72,12 +78,40 @@ function PreviewSingleMedia({ mediaIndex }: PreviewSingleMediaProps) {
         </Code>
       ) : null}
 
-      {mediaFile ? <Thumbnail mediaIndex={mediaIndex} /> : null}
+      {isProcessCompleted &&
+      ((mediaFile?.type === 'video' && mediaFile?.previewMode === 'video') ||
+        mediaFile?.type === 'image') ? (
+        <div className="flex justify-center my-4">
+          <Switch
+            size="sm"
+            isSelected={compareOutput}
+            onValueChange={() => {
+              setCompareOutput((s) => !s)
+            }}
+          >
+            <div className="flex justify-center items-center">
+              <span className="block mr-2 text-sm">Compare</span>
+              <Icon name="compare" />
+            </div>
+          </Switch>
+        </div>
+      ) : null}
+
+      {mediaFile ? (
+        isProcessCompleted &&
+        compareOutput &&
+        ((mediaFile?.type === 'video' && mediaFile?.previewMode === 'video') ||
+          mediaFile?.type === 'image') ? (
+          <MediaOutputCompareSlider mediaIndex={mediaIndex} />
+        ) : (
+          <MediaThumbnail mediaIndex={mediaIndex} />
+        )
+      ) : null}
 
       {!(isVideoTransformEditMode || isVideoTrimEditMode) ? (
         isProcessCompleted ? (
           <section className="animate-appearance-in">
-            <div className="flex justify-center items-center mt-3">
+            <div className="flex justify-center items-center mt-2">
               <p className="text-2xl font-bold mx-4">{mediaSize}</p>
               <Icon
                 name="curvedArrow"
@@ -198,12 +232,17 @@ function PreviewSingleMedia({ mediaIndex }: PreviewSingleMediaProps) {
     </motion.div>
   ) : (
     <motion.div
-      className="w-full h-full flex flex-col justify-center items-center flex-shrink-0"
+      className="relative w-full h-full flex flex-col justify-center items-center flex-shrink-0"
       initial={{ scale: 0.9 }}
       animate={{ scale: 1 }}
       transition={{ type: 'spring', duration: 0.6 }}
     >
       <div className="relative">
+        <Ripple
+          mainCircleOpacity={0.2}
+          mainCircleSize={380}
+          className="absolute top-0 left-0"
+        />
         <CircularProgress
           {...(videoDuration == null
             ? { isIndeterminate: true }

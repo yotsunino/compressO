@@ -1,0 +1,164 @@
+import merge from 'lodash/merge'
+import { memo, useCallback, useId } from 'react'
+import { ReactCompareSliderHandle } from 'react-compare-slider'
+import { PhotoView } from 'react-photo-view'
+import { useSnapshot } from 'valtio'
+
+import CompareSlider from '@/components/CompareSlider'
+import Icon from '@/components/Icon'
+import ImageViewer from '@/components/ImageViewer'
+import Tooltip from '@/components/Tooltip'
+import VideoPlayer from '@/components/VideoPlayer'
+import { cn } from '@/utils/tailwind'
+import { appProxy } from '../-state'
+
+type MediaOutputCompareSliderProps = {
+  mediaIndex: number
+}
+
+type renderImageDefaultType = {
+  isOriginal?: boolean
+  enableZoomViewer?: boolean
+}
+
+const renderImageDefaultOptions: renderImageDefaultType = {
+  isOriginal: true,
+  enableZoomViewer: true,
+}
+
+type renderVideoDefaultType = {
+  isOriginal?: boolean
+}
+
+const renderVideoDefaultOptions: renderImageDefaultType = {
+  isOriginal: true,
+}
+
+function MediaOutputCompareSlider({
+  mediaIndex,
+}: MediaOutputCompareSliderProps) {
+  if (mediaIndex < 0) return
+
+  const {
+    state: { media },
+  } = useSnapshot(appProxy)
+  const mediaFile = media.length === 1 ? media[0] : null
+
+  const id = useId()
+
+  const renderImage = useCallback(
+    (src: string, options?: renderImageDefaultType) => {
+      options = merge({}, renderImageDefaultOptions, options ?? {})
+      return (
+        <div
+          className="relative"
+          id={`image-comparison-${options?.isOriginal ? 0 : 1}`}
+          key={`image-comparison-${options?.isOriginal ? 0 : 1}`}
+        >
+          <img
+            src={src}
+            alt={`compare image ${options?.isOriginal ? 0 : 1}`}
+            className="max-h-[65vh] object-contain"
+            {...(mediaFile?.dimensions?.width
+              ? { width: mediaFile?.dimensions?.width }
+              : {})}
+          />
+          {options?.enableZoomViewer ? (
+            <div
+              className={cn(
+                'absolute bottom-4',
+                options?.isOriginal
+                  ? 'left-4 isolate z-[100]'
+                  : 'right-4 z-[100]',
+              )}
+            >
+              <ImageViewer>
+                <PhotoView src={src!}>
+                  <div>
+                    <Tooltip
+                      content={`Enlarge ${options?.isOriginal ? 'input' : 'output'}`}
+                    >
+                      <Icon name="zoom" size={18} className="cursor-pointer" />
+                    </Tooltip>
+                  </div>
+                </PhotoView>
+              </ImageViewer>
+            </div>
+          ) : null}
+        </div>
+      )
+    },
+    [mediaFile?.dimensions?.width],
+  )
+
+  const renderVideo = useCallback(
+    (src: string, options?: renderVideoDefaultType) => {
+      options = merge({}, renderVideoDefaultOptions, options ?? {})
+
+      return (
+        <VideoPlayer
+          id={`video-comparison-${options?.isOriginal ? 0 : 1}`}
+          key={`video-comparison-${options?.isOriginal ? 0 : 1}`}
+          url={src}
+          autoPlay
+          loop
+          controls={false}
+          playPauseOnSpaceKeydown={false}
+          disableClosedCaptions
+          disablePlayPauseControlAtCenter
+          disablePlayPauseViaContainerClick
+          containerClassName="w-full h-full"
+          {...(mediaFile?.dimensions?.width
+            ? { width: mediaFile?.dimensions?.width }
+            : {})}
+          style={{
+            width: '100%',
+            minWidth: '50vw',
+            maxHeight: '65vh',
+            aspectRatio:
+              (mediaFile?.dimensions?.width ?? 1) /
+              (mediaFile?.dimensions?.height ?? 1),
+          }}
+          muted={options?.isOriginal}
+        />
+      )
+    },
+    [mediaFile?.dimensions?.width, mediaFile?.dimensions?.height],
+  )
+
+  return (
+    <div id={id} className="rounded-3xl overflow-hidden w-fit">
+      <div className="border-1 border-zinc-200 dark:border-zinc-900 rounded-3xl">
+        <CompareSlider
+          onlyHandleDraggable
+          itemOne={
+            mediaFile?.type === 'video'
+              ? renderVideo(mediaFile?.path!)
+              : renderImage(mediaFile?.path!)
+          }
+          itemTwo={
+            mediaFile?.type === 'video'
+              ? renderVideo(`${mediaFile?.compressedFile?.path!}?id={${id}}`, {
+                  isOriginal: false,
+                })
+              : renderImage(`${mediaFile?.compressedFile?.path!}?id={${id}}`, {
+                  isOriginal: false,
+                })
+          }
+          handle={<ReactCompareSliderHandle />}
+          style={{ width: 'fit-content' }}
+        />
+      </div>
+      {mediaFile?.type === 'image' &&
+      mediaFile?.compressedFile?.extension === 'svg' &&
+      (mediaFile?.compressedFile?.sizeInBytes ?? 0) >= 5 * 1024 * 1024 ? (
+        <p className="text-xs my-2 flex justify-center items-center gap-1 text-warning-400">
+          <Icon name="warning" />
+          SVG file too large. Might affect rendering performance.
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
+export default memo(MediaOutputCompareSlider)

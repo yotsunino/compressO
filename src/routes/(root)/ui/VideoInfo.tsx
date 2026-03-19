@@ -791,7 +791,7 @@ function SubtitleStreamsDisplay({
 
             {stream.disposition.default ||
             stream.disposition.forced ||
-            stream.disposition.attached_pic ||
+            stream.disposition.attachedPic ||
             stream.disposition.comment ||
             stream.disposition.karaoke ||
             stream.disposition.lyrics ? (
@@ -808,7 +808,7 @@ function SubtitleStreamsDisplay({
                       - Forced
                     </div>
                   ) : null}
-                  {stream.disposition.attached_pic ? (
+                  {stream.disposition.attachedPic ? (
                     <div className="text-zinc-600 dark:text-zinc-400 text-xs">
                       - Attached Picture
                     </div>

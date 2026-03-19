@@ -47,6 +47,7 @@
     "react": "^18",
     "react-advanced-cropper": "^0.20.1",
     "react-colorful": "^5.6.1",
+    "react-compare-slider": "^3.1.0",
     "react-dom": "^18",
     "react-markdown": "^10.1.0",
     "react-photo-view": "^1.2.7",
@@ -82,8 +83,6 @@
     }
   },
   "lint-staged": {
-    "src/**/*.{js,ts,jsx,tsx}": [
-      "biome check --write"
-    ]
+    "src/**/*.{js,ts,jsx,tsx}": ["biome check --write"]
   }
 }

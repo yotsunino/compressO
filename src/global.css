@@ -155,6 +155,29 @@ body > * {
   cursor: text !important;
 }
 
+/* Tailwind CSS Animations */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+@layer base {
+  :root {
+    --animate-ripple: ripple var(--duration, 2s) ease calc(var(--i, 0) * 0.2s)
+      infinite;
+  }
+
+  @keyframes ripple {
+    0%,
+    100% {
+      transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(0.9);
+    }
+  }
+}
 .timeline-editor .ReactVirtualized__Grid,
 .timeline-editor .ReactVirtualized__Grid::before,
 .timeline-editor .ReactVirtualized__Grid::after {
@@ -215,4 +238,9 @@ body > * {
 
 .text-shadow {
   text-shadow: 4px 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.__rcs-handle-button {
+  width: 45px !important;
+  height: 45px !important;
 }

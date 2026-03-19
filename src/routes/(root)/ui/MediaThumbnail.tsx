@@ -382,31 +382,41 @@ function MediaThumbnail({ mediaIndex }: MediaThumbnailProps) {
           <div className="relative w-fit mx-auto">
             <Image
               alt="video to compress"
-              src={thumbnailPath as string}
+              src={
+                isProcessCompleted
+                  ? mediaFile?.type === 'video' &&
+                    mediaFile?.previewMode === 'image'
+                    ? mediaFile?.thumbnailPath!
+                    : mediaFile?.compressedFile?.path!
+                  : (thumbnailPath as string)
+              }
               className="object-contain rounded-3xl max-h-[65vh] border-1 border-zinc-200 dark:border-zinc-900 min-w-[100px] min-h-[100px]"
               onError={() => {
                 if (!isProcessCompleted) {
                   handleRegenerateThumbnail('00:00:01.00', 0, true)
                 }
               }}
+              {...(mediaFile?.dimensions?.width
+                ? { width: mediaFile?.dimensions?.width }
+                : {})}
             />
-            <div className="absolute bottom-2 right-2 z-[20] flex items-center gap-3 bg-zinc-900/50 min-h-[25px] px-3 rounded-2xl">
+            <div className="absolute bottom-3 right-3 z-[20] flex items-center gap-3 bg-zinc-900/50 min-h-[25px] px-2 rounded-2xl">
               {videoDuration && !isProcessCompleted ? (
-                <Tooltip content="Regenerate Thumbnail" className="w-0! h-0!">
-                  <Button
-                    size="sm"
-                    variant="light"
-                    isIconOnly
-                    onPress={() => {
-                      handleRegenerateThumbnail()
-                    }}
-                    isDisabled={isThumbnailRegenerating}
-                    isLoading={isThumbnailRegenerating}
-                    className="!p-0 !min-h-0 !h-[unset] !py-2 !w-[unset] !min-w-[unset] hover:bg-none"
-                  >
+                <Button
+                  size="sm"
+                  variant="light"
+                  isIconOnly
+                  onPress={() => {
+                    handleRegenerateThumbnail()
+                  }}
+                  isDisabled={isThumbnailRegenerating}
+                  isLoading={isThumbnailRegenerating}
+                  className="!p-0 !min-h-0 !py-2 !w-[unset] !min-w-[unset] !h-0 "
+                >
+                  <Tooltip content="Regenerate Thumbnail" className="w-0! h-0!">
                     <Icon name="image" size={20} />
-                  </Button>
-                </Tooltip>
+                  </Tooltip>
+                </Button>
               ) : null}
               <ImageViewer
                 // @ts-ignore
@@ -418,7 +428,7 @@ function MediaThumbnail({ mediaIndex }: MediaThumbnailProps) {
               >
                 <PhotoView src={thumbnailPath!}>
                   <div>
-                    <Tooltip content="Enlarge Image">
+                    <Tooltip content="Enlarge image">
                       <Icon name="zoom" size={18} className="cursor-pointer" />
                     </Tooltip>
                   </div>

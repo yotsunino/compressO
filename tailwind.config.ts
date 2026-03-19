@@ -39,6 +39,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      animation: {
+        ripple: 'var(--animate-ripple)',
+      },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic':
