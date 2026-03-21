@@ -6,6 +6,7 @@ use crate::domain::{
 };
 use crate::ffprobe::FFPROBE;
 use crate::fs::get_file_metadata;
+use crate::image::ImageCompressor;
 use crossbeam_channel::{Receiver, Sender};
 use nanoid::nanoid;
 use regex::Regex;
@@ -714,7 +715,7 @@ impl FFMPEG {
                                         break;
                                     }
                                     if let Ok(val) = std::str::from_utf8(&buf) {
-                                        log::debug!("stderr: {:?}", val);
+                                        log::debug!("[ffmpeg-sidecar] stderr: {:?}", val);
                                     }
                                 }
                                 Err(_) => {
@@ -1213,9 +1214,11 @@ impl FFMPEG {
             gifski_args_refs
         );
 
-        let mut gifski_cmd = match self.app.shell().sidecar("compresso_gifski") {
+        let image_compressor = ImageCompressor::new(&self.app)?;
+
+        let mut gifski_cmd = match image_compressor.get_gifski_command() {
             Ok(command) => Command::from(command),
-            Err(err) => return Err(format!("[gifski-sidecar]: {:?}", err.to_string())),
+            Err(err) => return Err(format!("Gifski command error {:?}", err.to_string())),
         };
 
         let mut gifski_child = gifski_cmd
