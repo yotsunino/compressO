@@ -236,6 +236,7 @@ export type ImageCompressionConfig = {
   isLossless: boolean
   quality: number
   stripMetadata: boolean
+  svgScaleFactor: number | null
 }
 
 export type MediaItem = {

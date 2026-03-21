@@ -88,12 +88,10 @@ function AudioCodec({ mediaIndex }: AudioCodecProps) {
       ? media[mediaIndex]
       : null
   const { config, videoInfoRaw, extension: videoExtension } = video ?? {}
-  const {
-    shouldEnableCustomAudioCodec,
-    customAudioCodec,
-    convertToExtension,
-    audioConfig,
-  } = config ?? commonConfigForBatchCompression.videoConfig ?? {}
+  const { shouldEnableCustomAudioCodec, convertToExtension, audioConfig } =
+    config ?? commonConfigForBatchCompression.videoConfig ?? {}
+
+  const customAudioCodec = audioConfig?.audioCodec ?? '-'
 
   const currentExtension = convertToExtension
     ? convertToExtension === '-'
@@ -116,10 +114,11 @@ function AudioCodec({ mediaIndex }: AudioCodecProps) {
           appProxy.state.media[mediaIndex].type === 'video' &&
           appProxy.state.media[mediaIndex]?.config
         ) {
-          appProxy.state.media[mediaIndex].config.customAudioCodec = undefined
+          appProxy.state.media[mediaIndex].config.audioConfig.audioCodec =
+            undefined
         } else {
           if (appProxy.state.media.length > 1) {
-            appProxy.state.commonConfigForBatchCompression.videoConfig.customAudioCodec =
+            appProxy.state.commonConfigForBatchCompression.videoConfig.audioConfig.audioCodec =
               undefined
           }
         }
@@ -157,11 +156,11 @@ function AudioCodec({ mediaIndex }: AudioCodecProps) {
         appProxy.state.media[mediaIndex].type === 'video' &&
         appProxy.state.media[mediaIndex]?.config
       ) {
-        appProxy.state.media[mediaIndex].config.customAudioCodec = value
+        appProxy.state.media[mediaIndex].config.audioConfig.audioCodec = value
         appProxy.state.media[mediaIndex].isConfigDirty = true
       } else {
         if (appProxy.state.media.length > 1) {
-          appProxy.state.commonConfigForBatchCompression.videoConfig.customAudioCodec =
+          appProxy.state.commonConfigForBatchCompression.videoConfig.audioConfig.audioCodec =
             value
           normalizeBatchMediaConfig()
         }

@@ -5,7 +5,7 @@ use crate::domain::{
 };
 use crate::ffmpeg::FFMPEG;
 use crate::fs::get_file_metadata;
-use image::ImageReader;
+use image::{ImageEncoder, ImageReader};
 use img_parts::{
     jpeg::Jpeg,
     png::{Png, PngChunk},
@@ -18,7 +18,6 @@ use shared_child::SharedChild;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
-use std::time::Duration;
 use std::{
     process::{Command, Stdio},
     sync::Arc,
@@ -91,7 +90,8 @@ impl ImageCompressor {
     pub async fn compress_image(
         &mut self,
         input_path: &str,
-        convert_to_extension: Option<&str>,
+        convert_to_extension: &str,
+        svg_scale_factor: Option<f32>,
         is_lossless: Option<bool>,
         quality: u8,
         image_id: &str,
@@ -106,7 +106,7 @@ impl ImageCompressor {
         let original_metadata = get_file_metadata(input_path)?;
 
         let original_extension = original_metadata.extension.to_lowercase();
-        let output_extension = convert_to_extension.unwrap_or(&original_extension);
+        let output_extension = convert_to_extension;
 
         let supported = EXTENSIONS.iter().any(|&ext| ext == output_extension);
         if !supported {
@@ -121,8 +121,7 @@ impl ImageCompressor {
             .iter()
             .collect();
 
-        let need_conversion =
-            convert_to_extension.is_some() && convert_to_extension.unwrap() != &original_extension;
+        let need_conversion = convert_to_extension != original_extension;
 
         let intermediate_path: Option<PathBuf> = if need_conversion {
             let temp_filename = format!("{}_temp.{}", image_id, original_extension);
@@ -179,14 +178,12 @@ impl ImageCompressor {
                 .await?
             }
             "svg" => {
-                self.compress_svg(
-                    input_path,
-                    compression_output_path.to_str().unwrap(),
-                    is_lossless.unwrap_or(true),
-                    quality,
-                    strip_metadata.unwrap_or(true),
-                )
-                .await?
+                if convert_to_extension != "svg" {
+                    // Completely skip the compression for svg if converting to another format
+                } else {
+                    self.compress_svg(input_path, compression_output_path.to_str().unwrap())
+                        .await?
+                }
             }
             _ => {
                 return Err(format!(
@@ -196,10 +193,13 @@ impl ImageCompressor {
             }
         };
 
-        tokio::time::sleep(Duration::from_secs(3)).await;
+        if !Path::exists(&compression_output_path) {
+            // If compression was skipped, copy the original file
+            fs::copy(input_path, &compression_output_path).map_err(|e| e.to_string())?;
+        }
 
         if need_conversion {
-            let convert_to_ext = convert_to_extension.unwrap();
+            let convert_to_ext = convert_to_extension;
             match original_extension.as_str() {
                 "png" | "jpg" | "jpeg" | "webp" => {
                     if convert_to_ext.eq("svg") {
@@ -235,7 +235,6 @@ impl ImageCompressor {
                                         quality,
                                     );
 
-                                    // Clean up temp png file
                                     let _ = fs::remove_file(&temp_png_path);
 
                                     retry_result?;
@@ -259,10 +258,13 @@ impl ImageCompressor {
                         .await?;
                     }
                 }
-                "svg" => {
-                    self.convert_svg_to_png(compression_output_path.to_str().unwrap(), image_id)?
-                }
-                _ => return Err("Unsupported convert_to_extension".to_string()),
+                "svg" => self.convert_svg_to_raster_image(
+                    compression_output_path.to_str().unwrap(),
+                    image_id,
+                    convert_to_ext,
+                    svg_scale_factor,
+                )?,
+                _ => return Err("Unsupported extension".to_string()),
             }
 
             // Clean up intermediate temp file
@@ -279,6 +281,97 @@ impl ImageCompressor {
             file_path: output_path.display().to_string(),
             file_metadata: Some(compressed_metadata),
         })
+    }
+
+    pub async fn compress_images_batch(
+        &mut self,
+        batch_id: &str,
+        images: Vec<ImageCompressionConfig>,
+    ) -> Result<ImageBatchCompressionResult, String> {
+        let mut results: std::collections::HashMap<String, ImageCompressionResult> =
+            std::collections::HashMap::new();
+        let total_count = images.len();
+
+        for (index, image_config) in images.iter().enumerate() {
+            let image_id = &image_config.image_id;
+
+            let app_clone = self.app.clone();
+            let batch_id_clone = batch_id.to_string();
+            let image_id_clone = image_id.clone();
+
+            tokio::spawn(async move {
+                if let Some(window) = app_clone.get_webview_window("main") {
+                    let _ = window.clone().listen(
+                        CustomEvents::ImageCompressionProgress.as_ref(),
+                        move |evt| {
+                            if let Ok(progress) =
+                                serde_json::from_str::<ImageCompressionProgress>(evt.payload())
+                            {
+                                if progress.image_id == image_id_clone {
+                                    let batch_progress = BatchImageCompressionProgress {
+                                        batch_id: batch_id_clone.to_owned(),
+                                        current_index: index,
+                                        total_count,
+                                        image_progress: progress,
+                                    };
+                                    let _ = window.emit(
+                                        CustomEvents::BatchImageCompressionProgress.as_ref(),
+                                        batch_progress,
+                                    );
+                                }
+                            }
+                        },
+                    );
+                }
+            });
+
+            let input_path = &image_config.image_path;
+            let quality = image_config.quality;
+            let convert_to_extension = image_config.convert_to_extension.as_str();
+            let svg_scale_factor = image_config.svg_scale_factor;
+            let strip_metadata = image_config.strip_metadata.unwrap_or(true);
+            let is_lossless = image_config.is_lossless;
+
+            match self
+                .compress_image(
+                    input_path,
+                    convert_to_extension,
+                    svg_scale_factor,
+                    is_lossless,
+                    quality,
+                    image_id,
+                    Some(batch_id),
+                    Some(strip_metadata),
+                )
+                .await
+            {
+                Ok(result) => {
+                    let image_id = result.image_id.clone();
+                    results.insert(image_id.clone(), result.clone());
+
+                    let app_clone2 = self.app.clone();
+                    let batch_id_clone2 = batch_id.to_string();
+
+                    tokio::spawn(async move {
+                        if let Some(window) = app_clone2.get_webview_window("main") {
+                            let individual_result = ImageBatchIndividualCompressionResult {
+                                batch_id: batch_id_clone2,
+                                result,
+                            };
+                            let _ = window.emit(
+                                CustomEvents::BatchImageIndividualCompressionCompletion.as_ref(),
+                                individual_result,
+                            );
+                        }
+                    });
+                }
+                Err(e) => {
+                    error!("Failed to compress image at index {}: {}", index, e);
+                }
+            }
+        }
+
+        Ok(ImageBatchCompressionResult { results })
     }
 
     async fn compress_png(
@@ -563,14 +656,7 @@ impl ImageCompressor {
         Ok(())
     }
 
-    async fn compress_svg(
-        &mut self,
-        input_path: &str,
-        output_path: &str,
-        _is_lossless: bool, // irrelevant
-        _quality: u8,       // irrelevant
-        strip_metadata: bool,
-    ) -> Result<(), String> {
+    async fn compress_svg(&mut self, input_path: &str, output_path: &str) -> Result<(), String> {
         let svg_content =
             svgcleaner::cleaner::load_file(input_path).map_err(|err| err.to_string())?;
 
@@ -592,7 +678,7 @@ impl ImageCompressor {
                 merge_gradients: false,
                 remove_title: true,
                 remove_desc: true,
-                remove_metadata: strip_metadata,
+                remove_metadata: true,
                 remove_dupl_linear_gradients: true,
                 remove_dupl_radial_gradients: true,
                 remove_dupl_fe_gaussian_blur: true,
@@ -659,8 +745,16 @@ impl ImageCompressor {
         Ok(())
     }
 
-    pub fn convert_svg_to_png(&self, input_path: &str, image_id: &str) -> Result<(), String> {
-        let output_filename = format!("{}.png", image_id);
+    pub fn convert_svg_to_raster_image(
+        &self,
+        input_path: &str,
+        image_id: &str,
+        output_format: &str,
+        scale_factor: Option<f32>,
+    ) -> Result<(), String> {
+        use std::io::BufWriter;
+
+        let output_filename = format!("{}.{}", image_id, output_format);
         let output_path: PathBuf = [self.assets_dir.clone(), PathBuf::from(&output_filename)]
             .iter()
             .collect();
@@ -673,105 +767,67 @@ impl ImageCompressor {
 
         let pixmap_size = tree.size().to_int_size();
 
-        let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height())
-            .ok_or("Failed to create pixmap")?;
+        let scale_factor = scale_factor.unwrap_or(2.0);
+        let scaled_width = (pixmap_size.width() as f32 * scale_factor) as u32;
+        let scaled_height = (pixmap_size.height() as f32 * scale_factor) as u32;
 
-        resvg::render(&tree, tiny_skia::Transform::default(), &mut pixmap.as_mut());
+        let mut pixmap =
+            tiny_skia::Pixmap::new(scaled_width, scaled_height).ok_or("Failed to create pixmap")?;
 
-        pixmap
-            .save_png(output_path.clone())
-            .map_err(|err| err.to_string())?;
+        resvg::render(
+            &tree,
+            tiny_skia::Transform::from_scale(scale_factor, scale_factor),
+            &mut pixmap.as_mut(),
+        );
 
-        Ok(())
-    }
-
-    pub async fn compress_images_batch(
-        &mut self,
-        batch_id: &str,
-        images: Vec<ImageCompressionConfig>,
-    ) -> Result<ImageBatchCompressionResult, String> {
-        let mut results: std::collections::HashMap<String, ImageCompressionResult> =
-            std::collections::HashMap::new();
-        let total_count = images.len();
-
-        for (index, image_config) in images.iter().enumerate() {
-            let image_id = &image_config.image_id;
-
-            let app_clone = self.app.clone();
-            let batch_id_clone = batch_id.to_string();
-            let image_id_clone = image_id.clone();
-
-            tokio::spawn(async move {
-                if let Some(window) = app_clone.get_webview_window("main") {
-                    let _ = window.clone().listen(
-                        CustomEvents::ImageCompressionProgress.as_ref(),
-                        move |evt| {
-                            if let Ok(progress) =
-                                serde_json::from_str::<ImageCompressionProgress>(evt.payload())
-                            {
-                                if progress.image_id == image_id_clone {
-                                    let batch_progress = BatchImageCompressionProgress {
-                                        batch_id: batch_id_clone.to_owned(),
-                                        current_index: index,
-                                        total_count,
-                                        image_progress: progress,
-                                    };
-                                    let _ = window.emit(
-                                        CustomEvents::BatchImageCompressionProgress.as_ref(),
-                                        batch_progress,
-                                    );
-                                }
-                            }
-                        },
-                    );
-                }
-            });
-
-            let input_path = &image_config.image_path;
-            let quality = image_config.quality;
-            let convert_to_extension = image_config.convert_to_extension.as_deref();
-            let strip_metadata = image_config.strip_metadata.unwrap_or(true);
-            let is_lossless = image_config.is_lossless;
-
-            match self
-                .compress_image(
-                    input_path,
-                    convert_to_extension,
-                    is_lossless,
-                    quality,
-                    image_id,
-                    Some(batch_id),
-                    Some(strip_metadata),
-                )
-                .await
-            {
-                Ok(result) => {
-                    let image_id = result.image_id.clone();
-                    results.insert(image_id.clone(), result.clone());
-
-                    let app_clone2 = self.app.clone();
-                    let batch_id_clone2 = batch_id.to_string();
-
-                    tokio::spawn(async move {
-                        if let Some(window) = app_clone2.get_webview_window("main") {
-                            let individual_result = ImageBatchIndividualCompressionResult {
-                                batch_id: batch_id_clone2,
-                                result,
-                            };
-                            let _ = window.emit(
-                                CustomEvents::BatchImageIndividualCompressionCompletion.as_ref(),
-                                individual_result,
-                            );
-                        }
-                    });
-                }
-                Err(e) => {
-                    error!("Failed to compress image at index {}: {}", index, e);
-                }
+        match output_format {
+            "png" => {
+                pixmap
+                    .save_png(&output_path)
+                    .map_err(|err| err.to_string())?;
             }
+            "jpg" | "jpeg" => {
+                let rgba_data = pixmap.data();
+                let mut rgb_data = Vec::with_capacity((scaled_width * scaled_height * 3) as usize);
+
+                for pixel in rgba_data.chunks(4) {
+                    let r = pixel[0];
+                    let g = pixel[1];
+                    let b = pixel[2];
+                    let a = pixel[3] as f32 / 255.0;
+
+                    // Composite over black background (0, 0, 0)
+                    let r_composite = (r as f32 * a) as u8;
+                    let g_composite = (g as f32 * a) as u8;
+                    let b_composite = (b as f32 * a) as u8;
+
+                    rgb_data.push(r_composite);
+                    rgb_data.push(g_composite);
+                    rgb_data.push(b_composite);
+                }
+
+                let file = fs::File::create(&output_path).map_err(|e| e.to_string())?;
+                let mut writer = BufWriter::new(file);
+                let encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut writer, 100);
+                encoder
+                    .write_image(
+                        &rgb_data,
+                        scaled_width,
+                        scaled_height,
+                        image::ExtendedColorType::Rgb8,
+                    )
+                    .map_err(|err| err.to_string())?;
+            }
+            "webp" => {
+                let encoder = webp::Encoder::from_rgba(pixmap.data(), scaled_width, scaled_height);
+                let webp_data = encoder.encode_lossless();
+
+                fs::write(&output_path, webp_data.to_vec()).map_err(|err| err.to_string())?;
+            }
+            _ => return Err(format!("Unsupported output format: {}", output_format)),
         }
 
-        Ok(ImageBatchCompressionResult { results })
+        Ok(())
     }
 
     pub async fn convert_image_via_ffmpeg(

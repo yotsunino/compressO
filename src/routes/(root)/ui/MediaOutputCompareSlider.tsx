@@ -34,6 +34,8 @@ const renderVideoDefaultOptions: renderImageDefaultType = {
   isOriginal: true,
 }
 
+const SVG_MAX_RENDERING_SIZE_LIMIT = 5 * 1024 * 1024
+
 function MediaOutputCompareSlider({
   mediaIndex,
 }: MediaOutputCompareSliderProps) {
@@ -128,6 +130,17 @@ function MediaOutputCompareSlider({
 
   return (
     <div id={id} className="rounded-3xl overflow-hidden w-fit">
+      {mediaFile?.type === 'image' &&
+      ((mediaFile?.compressedFile?.extension === 'svg' &&
+        (mediaFile?.compressedFile?.sizeInBytes ?? 0) >=
+          SVG_MAX_RENDERING_SIZE_LIMIT) ||
+        (mediaFile?.extension === 'svg' &&
+          (mediaFile?.sizeInBytes ?? 0) >= SVG_MAX_RENDERING_SIZE_LIMIT)) ? (
+        <p className="text-xs mb-2 flex justify-center items-center gap-1 text-warning-400">
+          <Icon name="warning" />
+          SVG file too large. Might affect the comparison renderer performance.
+        </p>
+      ) : null}
       <div className="border-1 border-zinc-200 dark:border-zinc-900 rounded-3xl">
         <CompareSlider
           onlyHandleDraggable
@@ -149,14 +162,6 @@ function MediaOutputCompareSlider({
           style={{ width: 'fit-content' }}
         />
       </div>
-      {mediaFile?.type === 'image' &&
-      mediaFile?.compressedFile?.extension === 'svg' &&
-      (mediaFile?.compressedFile?.sizeInBytes ?? 0) >= 5 * 1024 * 1024 ? (
-        <p className="text-xs my-2 flex justify-center items-center gap-1 text-warning-400">
-          <Icon name="warning" />
-          SVG file too large. Might affect rendering performance.
-        </p>
-      ) : null}
     </div>
   )
 }

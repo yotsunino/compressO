@@ -5,8 +5,8 @@ import {
   AudioChannelConfig,
   AudioStream,
   Chapter,
-  compressionPresets,
   ContainerInfo,
+  compressionPresets,
   extensions,
   SubtitleStream,
   VideoStream,
@@ -133,6 +133,7 @@ export type ImageConfig = {
   isLossless: boolean
   quality?: number | null
   stripMetadata: boolean
+  svgScaleFactor?: number
 }
 
 export type Image = {

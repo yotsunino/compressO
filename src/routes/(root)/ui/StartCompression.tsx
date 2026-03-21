@@ -16,9 +16,9 @@ import {
   VideoTrimSegment,
 } from '@/types/compression'
 import { formatBytes } from '@/utils/fs'
-import { appProxy } from '../-state'
 import CancelCompression from './CancelCompression'
 import SaveMedia from './SaveMedia'
+import { appProxy } from '../-state'
 
 function StartCompression() {
   const {
@@ -192,6 +192,7 @@ function StartCompression() {
                     ? 100
                     : (v.config.quality ?? 100),
                   stripMetadata: v.config.stripMetadata,
+                  svgScaleFactor: v.config.svgScaleFactor ?? null,
                 } satisfies ImageCompressionConfig)
               : undefined,
         })),

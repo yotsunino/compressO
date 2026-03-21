@@ -367,9 +367,10 @@ pub struct ImageCompressionResult {
 pub struct ImageCompressionConfig {
     pub image_id: String,
     pub image_path: String,
-    pub convert_to_extension: Option<String>,
+    pub convert_to_extension: String,
+    pub svg_scale_factor: Option<f32>, // 1-8
     pub is_lossless: Option<bool>,
-    pub quality: u8, // 0-100
+    pub quality: u8, // 1-100
     pub strip_metadata: Option<bool>,
 }
 

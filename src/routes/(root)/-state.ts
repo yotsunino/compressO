@@ -60,6 +60,7 @@ export const imageConfigInitialState: ImageConfig = {
   isLossless: false,
   quality: 50,
   stripMetadata: true,
+  svgScaleFactor: 2,
 }
 
 const appInitialState: App = {

@@ -4,7 +4,6 @@ use crate::domain::{
     MediaCompressionResult, MediaItemConfig, VideoCompressionProgress,
 };
 use crate::ffmpeg::FFMPEG;
-use crate::fs::get_file_metadata;
 use crate::image::ImageCompressor;
 use tauri::{Emitter, Listener, Manager};
 
@@ -125,14 +124,7 @@ pub async fn compress_media_batch(
         } else if let Some(image_config) = &media_item.image_config {
             let image_id = image_config.image_id.clone();
             let image_id_clone = image_id.clone();
-            let image_convert_to_ext_clone = image_config.convert_to_extension.clone();
-
-            let image_output_extension_clone = if image_convert_to_ext_clone.is_some() {
-                image_convert_to_ext_clone.unwrap().clone()
-            } else {
-                let image_metadata = get_file_metadata(&image_config.image_path)?;
-                image_metadata.extension
-            };
+            let image_output_extension_clone = image_config.convert_to_extension.clone();
 
             // Image compression doesn't have any progress % tracking, so we immediately send the current index of the image to let the front-end know where the index cursor is.
             // NOTE: this event must be sync and not be within tokio::spawn(...) due to the fact that image compression can be so fast, this event might deliver later and mess up the batch compression index cursor.
@@ -158,7 +150,8 @@ pub async fn compress_media_batch(
 
             let image_id = &image_config.image_id;
             let image_path = &image_config.image_path;
-            let convert_to_extension = image_config.convert_to_extension.as_deref();
+            let convert_to_extension = image_config.convert_to_extension.as_str();
+            let svg_scale_factor = image_config.svg_scale_factor;
             let quality = image_config.quality;
             let strip_metadata = image_config.strip_metadata;
             let is_lossless = image_config.is_lossless;
@@ -170,6 +163,7 @@ pub async fn compress_media_batch(
                 .compress_image(
                     image_path,
                     convert_to_extension,
+                    svg_scale_factor,
                     is_lossless,
                     quality,
                     image_id,
