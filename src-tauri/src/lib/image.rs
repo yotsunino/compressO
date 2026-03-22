@@ -17,6 +17,7 @@ use nanoid::nanoid;
 use oxipng::{optimize, Deflaters, InFile, Options, OutFile, StripChunks};
 use resvg::{self, tiny_skia, usvg};
 use std::fs;
+use std::io::BufWriter;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
@@ -264,7 +265,7 @@ impl ImageCompressor {
                 }
                 "svg" => self.convert_svg_to_raster_img(
                     compression_output_path.to_str().unwrap(),
-                    image_id,
+                    output_path.to_str().unwrap(),
                     convert_to_ext,
                     svg_scale_factor,
                 )?,
@@ -749,17 +750,10 @@ impl ImageCompressor {
     pub fn convert_svg_to_raster_img(
         &self,
         input_path: &str,
-        image_id: &str,
+        output_path: &str,
         output_format: &str,
         scale_factor: Option<f32>,
     ) -> Result<(), String> {
-        use std::io::BufWriter;
-
-        let output_filename = format!("{}.{}", image_id, output_format);
-        let output_path: PathBuf = [self.assets_dir.clone(), PathBuf::from(&output_filename)]
-            .iter()
-            .collect();
-
         let svg_data = fs::read(input_path).map_err(|err| err.to_string())?;
         let svg_string = std::str::from_utf8(&svg_data).map_err(|err| err.to_string())?;
 

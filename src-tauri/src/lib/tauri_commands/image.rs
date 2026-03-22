@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::{
     domain::{ImageBatchCompressionResult, ImageCompressionConfig},
     fs::delete_stale_files,
@@ -29,4 +31,30 @@ pub async fn compress_images_batch(
         .await
         .map(|result| Ok(result))
         .unwrap_or_else(|err| Err(err))
+}
+#[tauri::command]
+pub async fn convert_svg_to_png(
+    app: tauri::AppHandle,
+    image_path: &str,
+    image_id: &str,
+) -> Result<String, String> {
+    let image_compressor = image::ImageCompressor::new(&app)?;
+
+    let output_filename = format!("{}.png", image_id);
+    let output_path: PathBuf = [
+        image_compressor.get_asset_dir(),
+        output_filename.to_string(),
+    ]
+    .iter()
+    .collect();
+
+    let output_path_str = output_path.to_str().unwrap();
+
+    let _ = image_compressor.convert_svg_to_raster_img(
+        &image_path,
+        output_path_str,
+        "png",
+        Some(1.0),
+    )?;
+    Ok(output_path_str.to_string())
 }

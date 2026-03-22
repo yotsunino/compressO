@@ -20,7 +20,6 @@ import {
 import { convertSvgToPng } from '@/tauri/commands/image'
 import { extensions } from '@/types/compression'
 import { formatBytes } from '@/utils/fs'
-import { Image, Video } from '../../types/app'
 import {
   appProxy,
   imageConfigInitialState,
@@ -31,6 +30,7 @@ import DragAndDropFiles from './ui/DragAndDropFiles'
 import MediaConfig from './ui/MediaConfig'
 import OpenWithApp from './ui/OpenWithApp'
 import ReadFilesFromClipboard from './ui/ReadFilesFromClipboard'
+import { Image, Video } from '../../types/app'
 
 export const Route = createFileRoute('/(root)/')({
   component: Root,
@@ -185,7 +185,7 @@ function Root() {
             // create a static image thumbnail for large svg due to performance reason
             if (
               path.endsWith('.svg') &&
-              fileMetadata?.size >= 2 * 1024 * 1024
+              fileMetadata?.size >= 1 * 1024 * 1024
             ) {
               try {
                 const outputPngPath = await convertSvgToPng(
