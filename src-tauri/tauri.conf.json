@@ -20,7 +20,8 @@
       "./bin/compresso_ffprobe",
       "./bin/compresso_pngquant",
       "./bin/compresso_jpegoptim",
-      "./bin/compresso_gifski"
+      "./bin/compresso_gifski",
+      "./bin/compresso_ghostscript"
     ],
     "fileAssociations": [
       {

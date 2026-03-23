@@ -1,48 +1,35 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use lib::fs::{self as file_system};
+mod core;
+mod sys;
+mod tauri_commands;
+
 use std::sync::{Arc, Mutex, OnceLock};
+use sys::fs::{self as file_system};
 use tauri::{Emitter, Listener, Manager, Url};
 use tauri_plugin_fs::FsExt;
 use tauri_plugin_log::{Target as LogTarget, TargetKind as LogTargetKind};
 
-use lib::tauri_commands::{
-    dock::{
-        __cmd__clear_dock_badge, __cmd__set_dock_progress, clear_dock_badge, set_dock_progress,
-    },
-    ffmpeg::{
-        __cmd__compress_video, __cmd__compress_videos_batch, __cmd__extract_subtitle,
-        __cmd__generate_video_thumbnail, compress_video, compress_videos_batch, extract_subtitle,
-        generate_video_thumbnail,
-    },
+use tauri_commands::{
+    dock::{clear_dock_badge, set_dock_progress},
+    ffmpeg::{compress_video, compress_videos_batch, extract_subtitle, generate_video_thumbnail},
     ffprobe::{
-        __cmd__get_audio_streams, __cmd__get_chapters, __cmd__get_container_info,
-        __cmd__get_subtitle_streams, __cmd__get_video_basic_info, __cmd__get_video_streams,
         get_audio_streams, get_chapters, get_container_info, get_subtitle_streams,
         get_video_basic_info, get_video_streams,
     },
-    file_manager::{__cmd__show_item_in_file_manager, show_item_in_file_manager},
+    file_manager::show_item_in_file_manager,
     fs::{
-        __cmd__copy_file_to_clipboard, __cmd__delete_cache, __cmd__delete_file,
-        __cmd__get_file_metadata, __cmd__get_image_dimension, __cmd__get_svg_dimension,
-        __cmd__move_file, __cmd__read_files_from_clipboard, __cmd__read_files_from_paths,
         copy_file_to_clipboard, delete_cache, delete_file, get_file_metadata, get_image_dimension,
         get_svg_dimension, move_file, read_files_from_clipboard, read_files_from_paths,
     },
-    image::{
-        __cmd__compress_images_batch, __cmd__convert_svg_to_png, compress_images_batch,
-        convert_svg_to_png,
-    },
-    media::{__cmd__compress_media_batch, compress_media_batch},
-    updater::{
-        __cmd__check_update, __cmd__download_and_install_update, check_update,
-        download_and_install_update,
-    },
+    image::{compress_images_batch, convert_svg_to_png},
+    media::compress_media_batch,
+    updater::{check_update, download_and_install_update},
 };
 
 #[cfg(target_os = "linux")]
-use lib::tauri_commands::file_manager::DbusState;
+use tauri_commands::file_manager::DbusState;
 
 #[cfg(any(windows, target_os = "linux"))]
 use std::path::PathBuf;

@@ -9,12 +9,6 @@ default-run = "compressO"
 edition = "2021"
 rust-version = "1.67"
 
-
-[lib]
-name = "lib"
-path = "src/lib/mod.rs"
-crate-type = ["lib", "staticlib", "cdylib"]
-
 [build-dependencies]
 tauri-build = { version = "2.0.0", features = [] }
 
