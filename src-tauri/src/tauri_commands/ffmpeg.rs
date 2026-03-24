@@ -1,12 +1,12 @@
 use crate::core::{
     domain::{
-        AudioConfig, BatchCompressionResult, SubtitlesConfig, VideoCompressionConfig,
-        VideoCompressionResult, VideoMetadataConfig, VideoThumbnail, VideoTrimSegment,
+        AudioConfig, BatchCompressionResult, MediaTransformHistory, SubtitlesConfig,
+        VideoCompressionConfig, VideoCompressionResult, VideoMetadataConfig, VideoThumbnail,
+        VideoTrimSegment,
     },
     ffmpeg::{self},
 };
 use crate::sys::fs::delete_stale_files;
-use serde_json::Value;
 use std::path::Path;
 
 #[tauri::command]
@@ -18,10 +18,10 @@ pub async fn compress_video(
     video_id: &str,
     audio_config: AudioConfig,
     quality: u16,
-    dimensions: Option<(u32, u32)>,
+    dimensions: Option<(f64, f64)>,
     fps: Option<&str>,
     video_codec: Option<&str>,
-    transforms_history: Option<Vec<Value>>,
+    transform_history: Option<MediaTransformHistory>,
     metadata_config: Option<VideoMetadataConfig>,
     custom_thumbnail_path: Option<&str>,
     trim_segments: Option<Vec<VideoTrimSegment>>,
@@ -48,7 +48,7 @@ pub async fn compress_video(
             dimensions,
             fps,
             video_codec,
-            transforms_history.as_ref(),
+            transform_history.as_ref(),
             metadata_config.as_ref(),
             custom_thumbnail_path,
             trim_segments.as_ref(),

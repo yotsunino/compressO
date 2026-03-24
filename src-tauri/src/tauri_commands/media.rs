@@ -62,7 +62,7 @@ pub async fn compress_media_batch(
             let dimensions = video_config.dimensions;
             let fps = video_config.fps.as_deref();
             let video_codec = video_config.video_codec.as_deref();
-            let transforms_history = video_config.transforms_history.as_ref().map(|v| v.as_ref());
+            let transform_history = video_config.transform_history.as_ref().map(|v| v.as_ref());
             let metadata_config = video_config.metadata_config.as_ref();
             let thumbnail_path = video_config.custom_thumbnail_path.as_deref();
             let trim_segments = video_config.trim_segments.as_ref();
@@ -83,7 +83,7 @@ pub async fn compress_media_batch(
                     dimensions,
                     fps,
                     video_codec,
-                    transforms_history,
+                    transform_history,
                     metadata_config,
                     thumbnail_path,
                     trim_segments,
@@ -154,6 +154,8 @@ pub async fn compress_media_batch(
             let strip_metadata = image_config.strip_metadata;
             let is_lossless = image_config.is_lossless;
             let svg_config = image_config.svg_config.clone();
+            let dimensions = image_config.dimensions;
+            let transform_history = image_config.transform_history.as_ref();
 
             let mut image_compressor = ImageCompressor::new(&app)
                 .map_err(|e| format!("Failed to create image compressor instance: {}", e))?;
@@ -169,6 +171,8 @@ pub async fn compress_media_batch(
                     Some(batch_id.as_str()),
                     strip_metadata,
                     svg_config,
+                    dimensions,
+                    transform_history,
                 )
                 .await
             {

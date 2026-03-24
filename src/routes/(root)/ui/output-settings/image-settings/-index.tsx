@@ -4,10 +4,12 @@ import { useSnapshot } from 'valtio'
 import { appProxy } from '@/routes/(root)/-state'
 import { ImageExtension as ImageExtensionType } from '@/types/compression'
 import CompressionQuality from './CompressionQuality'
+import ImageDimensions from './ImageDimensions'
 import ImageExtension from './ImageExtension'
 import ImageMetadata from './ImageMetadata'
 import SvgConfig from './SvgConfig'
 import SvgScaleFactor from './SvgScaleFactor'
+import TransformImage from './TransformImage'
 
 type ImageSettingsProps = {
   mediaIndex: number
@@ -21,7 +23,7 @@ function ImageSettings({ mediaIndex }: ImageSettingsProps) {
     media.length > 0 && mediaIndex >= 0 && media[mediaIndex].type == 'image'
       ? media[mediaIndex]
       : null
-  const { config } = image ?? {}
+  const { config, extension: imageExtension } = image ?? {}
   const { convertToExtension } =
     config ?? commonConfigForBatchCompression.imageConfig ?? {}
 
@@ -42,6 +44,24 @@ function ImageSettings({ mediaIndex }: ImageSettingsProps) {
           <SvgScaleFactor mediaIndex={mediaIndex} />
           <Divider className="my-3 !mt-6" />
         </div>
+      ) : null}
+
+      {(['png', 'jpg', 'jpeg', 'webp', 'gif'] as ImageExtensionType[]).includes(
+        imageExtension as ImageExtensionType,
+      ) &&
+      !(['svg'] as ImageExtensionType[]).includes(
+        convertToExtension as ImageExtensionType,
+      ) ? (
+        <>
+          <div>
+            <ImageDimensions mediaIndex={mediaIndex} />
+            <Divider className="my-3" />
+          </div>
+          <div>
+            <TransformImage mediaIndex={mediaIndex} />
+            <Divider className="my-3" />
+          </div>
+        </>
       ) : null}
 
       <div>

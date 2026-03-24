@@ -22,7 +22,7 @@ import VideoTrimmerTimeline, {
   VideoTrimmerTimelineRef,
 } from '@/ui/VideoTrimmerTimeline'
 import { formatDuration } from '@/utils/string'
-import VideoTransformer from './VideoTransformer'
+import MediaTransformer from './MediaTransformer'
 import { appProxy } from '../-state'
 
 function pickRandomTimestamp(durationMs: number): string {
@@ -48,17 +48,12 @@ function MediaThumbnail({ mediaIndex }: MediaThumbnailProps) {
   } = useSnapshot(appProxy)
   const mediaFile = media.length > 0 ? media[mediaIndex] : null
   const {
-    type: mediaType,
     path: mediaPath,
     pathRaw: mediaPathRaw,
     compressedFile,
     isProcessCompleted,
   } = mediaFile ?? {}
-  const {
-    thumbnailPath: videoThumbnailPath,
-    previewMode = 'video',
-    videoDuration,
-  } = mediaFile?.type === 'video' ? (mediaFile ?? {}) : {}
+  const { thumbnailPath: videoThumbnailPath } = mediaFile ?? {}
   const {
     shouldTransformVideo,
     isVideoTransformEditMode,
@@ -66,6 +61,9 @@ function MediaThumbnail({ mediaIndex }: MediaThumbnailProps) {
     isVideoTrimEditMode,
     shouldTrimVideo,
   } = mediaFile?.type === 'video' ? (mediaFile?.config ?? {}) : {}
+
+  const { shouldTransformImage, isImageTransformEditMode } =
+    mediaFile?.type === 'image' ? (mediaFile?.config ?? {}) : {}
 
   const playerRef = useRef<VideoPlayerRef | null>(null)
   const trimmerRef = useRef<VideoTrimmerTimelineRef | null>(null)
@@ -75,11 +73,13 @@ function MediaThumbnail({ mediaIndex }: MediaThumbnailProps) {
   const [isCopyingFrame, setIsCopyingFrame] = useState(false)
 
   const handleCopyCurrentFrame = useCallback(async () => {
+    const targetMedia = appProxy.state.media[mediaIndex]
     if (
+      !targetMedia ||
+      targetMedia.type !== 'video' ||
+      !targetMedia.videoDuration ||
       !mediaPathRaw ||
-      !videoDuration ||
-      !playerRef.current ||
-      appProxy.state.media[mediaIndex].type !== 'video'
+      !playerRef.current
     ) {
       toast.error('Unable to copy frame')
       return
@@ -88,7 +88,7 @@ function MediaThumbnail({ mediaIndex }: MediaThumbnailProps) {
     setIsCopyingFrame(true)
     try {
       const currentTime = playerRef.current.playerRef?.getCurrentTime?.() ?? 0
-
+      const videoDuration = targetMedia.videoDuration
       const targetDuration =
         currentTime >= videoDuration
           ? currentTime - 0.02
@@ -106,20 +106,24 @@ function MediaThumbnail({ mediaIndex }: MediaThumbnailProps) {
     } finally {
       setIsCopyingFrame(false)
     }
-  }, [mediaPathRaw, videoDuration, mediaIndex])
+  }, [mediaPathRaw, mediaIndex])
 
   const handleRegenerateThumbnail = useCallback(
     async (timeStamp?: string, retries = 2, forced = false) => {
+      const targetMedia = appProxy.state.media[mediaIndex]
+
       if (
-        appProxy.state.media[mediaIndex].type !== 'video' ||
+        !targetMedia ||
+        targetMedia.type !== 'video' ||
+        !targetMedia.videoDuration ||
         !mediaPathRaw ||
-        !videoDuration ||
         (forced ? false : isThumbnailRegenerating)
       )
         return
 
       setIsThumbnailRegenerating(true)
       try {
+        const videoDuration = targetMedia.videoDuration
         const result = await generateVideoThumbnail(
           mediaPathRaw,
           timeStamp ?? pickRandomTimestamp(videoDuration * 1000),
@@ -136,7 +140,7 @@ function MediaThumbnail({ mediaIndex }: MediaThumbnailProps) {
         setIsThumbnailRegenerating(false)
       }
     },
-    [mediaPathRaw, videoDuration, mediaIndex, isThumbnailRegenerating],
+    [mediaPathRaw, mediaIndex, isThumbnailRegenerating],
   )
 
   const seekPlayerTo = useCallback((time: number, onPausedOnly = true) => {
@@ -156,7 +160,8 @@ function MediaThumbnail({ mediaIndex }: MediaThumbnailProps) {
     refreshTimeline,
   } = useTimelineEngine({
     timelineState: trimmerRef,
-    totalDuration: videoDuration ?? 0,
+    totalDuration:
+      mediaFile?.type === 'video' ? (mediaFile.videoDuration ?? 0) : 0,
     onPlay: () => {
       playerRef.current?.playVideo?.()
     },
@@ -276,7 +281,9 @@ function MediaThumbnail({ mediaIndex }: MediaThumbnailProps) {
     shouldTrimVideo && isVideoTrimEditMode && !isProcessCompleted
 
   const showTransformerLayout =
-    shouldTransformVideo && isVideoTransformEditMode && !isProcessCompleted
+    ((shouldTransformVideo && isVideoTransformEditMode) ||
+      (shouldTransformImage && isImageTransformEditMode)) &&
+    !isProcessCompleted
 
   const thumbnailPath =
     mediaFile?.type === 'video' ? videoThumbnailPath : mediaPath
@@ -285,217 +292,229 @@ function MediaThumbnail({ mediaIndex }: MediaThumbnailProps) {
     ? mediaFile?.type === 'video' && mediaFile?.previewMode === 'image'
       ? mediaFile?.thumbnailPath!
       : mediaFile?.compressedFile?.path!
-    : (thumbnailPath as string)
+    : thumbnailPath!
 
   return (
-    <div className="relative w-full flex items-center justify-center">
-      <div className="relative w-full px-4">
-        {mediaType === 'video' &&
-        previewMode === 'video' &&
-        mediaPath &&
-        (mediaFile?.isProcessCompleted
-          ? mediaFile?.compressedFile?.extension !== 'gif'
-          : true) ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-          >
-            <VideoPlayer
-              ref={playerRef}
-              url={
-                isProcessCompleted && compressedFile
-                  ? compressedFile?.path!
-                  : mediaPath!
-              }
-              enableTimelinePlayer={
-                !(
-                  showTrimmerLayout ||
-                  showTransformerLayout ||
-                  isProcessCompleted
-                )
-              }
-              progressInterval={10}
-              controls={false}
-              playPauseOnSpaceKeydown={!showTransformerLayout}
-              autoFocus
-              containerClassName="w-full h-full mx-auto"
-              contextMenu={
-                !isProcessCompleted ? (
-                  <div className="min-w-[120px] p-0">
-                    <button
-                      className="flex items-center gap-1 w-full px-2 py-2 text-xs text-left hover:bg-default-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      onClick={handleCopyCurrentFrame}
-                      disabled={isCopyingFrame}
-                    >
-                      <Icon name="copy" size={20} />
-                      <span>Copy current frame</span>
-                    </button>
-                  </div>
-                ) : null
-              }
-              style={{
-                width: '100%',
-                minWidth: '50vw',
-                maxHeight: '65vh',
-                aspectRatio:
-                  (mediaFile?.dimensions?.width ?? 1) /
-                  (mediaFile?.dimensions?.height ?? 1),
-              }}
-              config={{
-                file: {
-                  attributes: {
-                    crossOrigin: 'anonymous',
-                  },
-                  tracks: [],
-                },
-              }}
-              disableClosedCaptions
-              onError={() => {
-                toast.warning('Switching to image thumbnail...')
-                if (appProxy.state.media[mediaIndex].type === 'video') {
-                  appProxy.state.media[mediaIndex].previewMode = 'image'
+    <>
+      <div className="relative w-full">
+        <div className="relative w-full px-4">
+          {mediaFile?.type === 'video' &&
+          mediaFile.previewMode === 'video' &&
+          mediaPath &&
+          (mediaFile?.isProcessCompleted
+            ? mediaFile?.compressedFile?.extension !== 'gif'
+            : true) ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+            >
+              <VideoPlayer
+                ref={playerRef}
+                url={
+                  isProcessCompleted && compressedFile
+                    ? compressedFile?.path!
+                    : mediaPath!
                 }
-              }}
-              onProgress={({ playedSeconds }: OnProgressProps) => {
-                if (playerRef.current?.playerRef) {
-                  setTimelineTime(playedSeconds)
-                  autoScrollCursorToCurrentTime(scales)
-                }
-              }}
-              // ffmpeg duration is sometimes incorrect, so force set this duration to particular video
-              onDuration={(duration: number) => {
-                if (
-                  duration &&
-                  !Number.isNaN(duration) &&
-                  !appProxy.state.isProcessCompleted
-                ) {
-                  if (appProxy.state.media[mediaIndex].type === 'video') {
-                    appProxy.state.media[mediaIndex].videoDuration = duration
-                  }
-                  refreshTimeline()
-                }
-              }}
-              onPlay={() => {
-                setTimeout(() => {
-                  autoScrollCursorToCurrentTime(scales)
-                }, 100)
-              }}
-              onArrowKeySeek={() => {
-                autoScrollCursorToCurrentTime(scales, {
-                  onlyOnOutOfView: false,
-                  smoothScrolling: true,
-                })
-              }}
-            />
-          </motion.div>
-        ) : (
-          <div className="relative w-fit mx-auto">
-            <Image
-              alt="image to compress"
-              src={imageToRenderSrc}
-              className="object-contain rounded-3xl max-h-[65vh] border-1 border-zinc-200 dark:border-zinc-900 min-w-[100px] min-h-[100px]"
-              onError={() => {
-                if (!isProcessCompleted) {
-                  handleRegenerateThumbnail('00:00:01.00', 0, true)
-                }
-              }}
-              {...(mediaFile?.dimensions?.width
-                ? { width: mediaFile?.dimensions?.width }
-                : {})}
-            />
-            <div className="absolute bottom-3 right-3 z-[20] flex items-center gap-3 bg-zinc-900/10 dark:bg-zinc-900/40 min-h-[25px] px-2 rounded-2xl">
-              {videoDuration && !isProcessCompleted ? (
-                <Button
-                  size="sm"
-                  variant="light"
-                  isIconOnly
-                  onPress={() => {
-                    handleRegenerateThumbnail()
-                  }}
-                  isDisabled={isThumbnailRegenerating}
-                  isLoading={isThumbnailRegenerating}
-                  className="!p-0 !min-h-0 !py-2 !w-[unset] !min-w-[unset] !h-0 "
-                >
-                  <Tooltip content="Regenerate Thumbnail" className="w-0! h-0!">
-                    <Icon name="image" size={20} />
-                  </Tooltip>
-                </Button>
-              ) : null}
-              <ImageViewer
-                // @ts-ignore
-                providerProps={
-                  mediaFile?.extension === 'svg' ||
-                  (isProcessCompleted &&
-                    mediaFile?.config?.convertToExtension === 'svg')
-                    ? { photoWrapClassName: 'bg-zinc-800' }
-                    : {}
-                }
-              >
-                <PhotoView src={imageToRenderSrc!}>
-                  <div>
-                    <Tooltip content="Enlarge image">
-                      <Icon name="zoom" size={18} className="cursor-pointer" />
-                    </Tooltip>
-                  </div>
-                </PhotoView>
-              </ImageViewer>
-            </div>
-          </div>
-        )}
-        {mediaType === 'video' && showTrimmerLayout && videoDuration ? (
-          <div className="mt-4">
-            <VideoTrimmerTimeline
-              id="video-trimmer-1"
-              ref={trimmerRef}
-              duration={videoDuration}
-              {...(trimConfig
-                ? {
-                    initialTrimActions: trimConfig as any,
-                  }
-                : {})}
-              onActionResizing={(data) => {
-                if (playerRef.current?.playerRef) {
-                  playerRef.current.playerRef.seekTo(
-                    data.dir === 'left' ? data.start : data.end,
+                enableTimelinePlayer={
+                  !(
+                    showTrimmerLayout ||
+                    showTransformerLayout ||
+                    isProcessCompleted
                   )
                 }
-              }}
-              onCursorDrag={seekPlayerTo}
-              onClickTimeArea={(time) => {
-                seekPlayerTo(time, false)
-                return true
-              }}
-              onClickActionOnly={(_, { time }) => {
-                seekPlayerTo(time, false)
-                setTimelineTime(time)
-              }}
-              onEditorDataChange={(data) => {
-                if (trimConfigSetDebounceRef.current) {
-                  clearTimeout(trimConfigSetDebounceRef.current)
+                progressInterval={10}
+                controls={false}
+                playPauseOnSpaceKeydown={!showTransformerLayout}
+                autoFocus
+                containerClassName="w-full h-full"
+                contextMenu={
+                  !isProcessCompleted ? (
+                    <div className="min-w-[120px] p-0">
+                      <button
+                        className="flex items-center gap-1 w-full px-2 py-2 text-xs text-left hover:bg-default-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={handleCopyCurrentFrame}
+                        disabled={isCopyingFrame}
+                      >
+                        <Icon name="copy" size={20} />
+                        <span>Copy current frame</span>
+                      </button>
+                    </div>
+                  ) : null
                 }
-                trimConfigSetDebounceRef.current = setTimeout(() => {
-                  const trimRow = data.find((d) => d.id === rowIds.videoTrim)
-                  if (
-                    trimRow &&
-                    appProxy.state.media[mediaIndex].type === 'video' &&
-                    appProxy.state.media[mediaIndex]?.config
-                  ) {
-                    appProxy.state.media[mediaIndex].config.trimConfig =
-                      trimRow.actions
+                style={{
+                  width: '100%',
+                  minWidth: '50vw',
+                  maxHeight: '60vh',
+                  aspectRatio:
+                    (mediaFile?.dimensions?.width ?? 1) /
+                    (mediaFile?.dimensions?.height ?? 1),
+                }}
+                config={{
+                  file: {
+                    attributes: {
+                      crossOrigin: 'anonymous',
+                    },
+                    tracks: [],
+                  },
+                }}
+                disableClosedCaptions
+                onError={() => {
+                  toast.warning('Switching to image thumbnail...')
+                  if (appProxy.state.media[mediaIndex].type === 'video') {
+                    appProxy.state.media[mediaIndex].previewMode = 'image'
                   }
-                }, 250)
-              }}
-            />
-          </div>
-        ) : null}
+                }}
+                onProgress={({ playedSeconds }: OnProgressProps) => {
+                  if (playerRef.current?.playerRef) {
+                    setTimelineTime(playedSeconds)
+                    autoScrollCursorToCurrentTime(scales)
+                  }
+                }}
+                // ffmpeg duration is sometimes incorrect, so force set this duration to particular video
+                onDuration={(duration: number) => {
+                  if (
+                    duration &&
+                    !Number.isNaN(duration) &&
+                    !appProxy.state.isProcessCompleted
+                  ) {
+                    if (appProxy.state.media[mediaIndex].type === 'video') {
+                      appProxy.state.media[mediaIndex].videoDuration = duration
+                    }
+                    refreshTimeline()
+                  }
+                }}
+                onPlay={() => {
+                  setTimeout(() => {
+                    autoScrollCursorToCurrentTime(scales)
+                  }, 100)
+                }}
+                onArrowKeySeek={() => {
+                  autoScrollCursorToCurrentTime(scales, {
+                    onlyOnOutOfView: false,
+                    smoothScrolling: true,
+                  })
+                }}
+              />
+            </motion.div>
+          ) : (
+            <div className="relative w-fit mx-auto">
+              <Image
+                alt="image to compress"
+                src={imageToRenderSrc}
+                className="object-contain rounded-3xl max-h-[60vh] border-1 border-zinc-200 dark:border-zinc-900 min-w-[100px] min-h-[100px]"
+                onError={() => {
+                  if (!isProcessCompleted) {
+                    handleRegenerateThumbnail('00:00:01.00', 0, true)
+                  }
+                }}
+              />
+              {!showTransformerLayout ? (
+                <div className="absolute bottom-3 right-3 z-[10] flex items-center gap-3 bg-zinc-900/10 dark:bg-zinc-900/40 min-h-[25px] px-2 rounded-2xl">
+                  {mediaFile?.type === 'video' &&
+                  mediaFile.videoDuration &&
+                  !isProcessCompleted ? (
+                    <Button
+                      size="sm"
+                      variant="light"
+                      isIconOnly
+                      onPress={() => {
+                        handleRegenerateThumbnail()
+                      }}
+                      isDisabled={isThumbnailRegenerating}
+                      isLoading={isThumbnailRegenerating}
+                      className="!p-0 !min-h-0 !py-2 !w-[unset] !min-w-[unset] !h-0 "
+                    >
+                      <Tooltip
+                        content="Regenerate Thumbnail"
+                        className="w-0! h-0!"
+                      >
+                        <Icon name="image" size={20} />
+                      </Tooltip>
+                    </Button>
+                  ) : null}
+                  <ImageViewer
+                    // @ts-ignore
+                    providerProps={
+                      mediaFile?.extension === 'svg' ||
+                      (isProcessCompleted &&
+                        mediaFile?.config?.convertToExtension === 'svg')
+                        ? { photoWrapClassName: 'bg-zinc-800' }
+                        : {}
+                    }
+                  >
+                    <PhotoView src={imageToRenderSrc!}>
+                      <div>
+                        <Tooltip content="Enlarge image">
+                          <Icon
+                            name="zoom"
+                            size={18}
+                            className="cursor-pointer"
+                          />
+                        </Tooltip>
+                      </div>
+                    </PhotoView>
+                  </ImageViewer>
+                </div>
+              ) : null}
+            </div>
+          )}
+          {mediaFile?.type === 'video' &&
+          showTrimmerLayout &&
+          mediaFile.videoDuration ? (
+            <div className="mt-4">
+              <VideoTrimmerTimeline
+                id="video-trimmer-1"
+                ref={trimmerRef}
+                duration={mediaFile.videoDuration}
+                {...(trimConfig
+                  ? {
+                      initialTrimActions: trimConfig as any,
+                    }
+                  : {})}
+                onActionResizing={(data) => {
+                  if (playerRef.current?.playerRef) {
+                    playerRef.current.playerRef.seekTo(
+                      data.dir === 'left' ? data.start : data.end,
+                    )
+                  }
+                }}
+                onCursorDrag={seekPlayerTo}
+                onClickTimeArea={(time) => {
+                  seekPlayerTo(time, false)
+                  return true
+                }}
+                onClickActionOnly={(_, { time }) => {
+                  seekPlayerTo(time, false)
+                  setTimelineTime(time)
+                }}
+                onEditorDataChange={(data) => {
+                  if (trimConfigSetDebounceRef.current) {
+                    clearTimeout(trimConfigSetDebounceRef.current)
+                  }
+                  trimConfigSetDebounceRef.current = setTimeout(() => {
+                    const trimRow = data.find((d) => d.id === rowIds.videoTrim)
+                    if (
+                      trimRow &&
+                      appProxy.state.media[mediaIndex].type === 'video' &&
+                      appProxy.state.media[mediaIndex]?.config
+                    ) {
+                      appProxy.state.media[mediaIndex].config.trimConfig =
+                        trimRow.actions
+                    }
+                  }, 250)
+                }}
+              />
+            </div>
+          ) : null}
+        </div>
       </div>
       {showTransformerLayout ? (
-        <div className="absolute top-0 right-0 bottom-0 left-0 w-full h-full flex flex-col m-auto justify-center items-center z-[10] bg-white1 dark:bg-black1">
-          <VideoTransformer mediaIndex={mediaIndex} />
+        <div className="absolute top-0 right-0 bottom-0 left-0 w-full h-full m-auto z-[10] p-4 bg-white1 dark:bg-black1 flex flex-col">
+          <MediaTransformer mediaIndex={mediaIndex} />
         </div>
       ) : null}
-    </div>
+    </>
   )
 }
 

@@ -12,8 +12,8 @@ import {
   CustomEvents,
   ImageCompressionConfig,
   MediaBatchCompressionResult,
+  MediaTransformHistory,
   VideoCompressionConfig,
-  VideoTransformsHistory,
   VideoTrimSegment,
 } from '@/types/compression'
 import { formatBytes } from '@/utils/fs'
@@ -44,6 +44,8 @@ function StartCompression() {
       if (appProxy.state.media[index].type === 'video') {
         appProxy.state.media[index].config.isVideoTransformEditMode = false
         appProxy.state.media[index].config.isVideoTrimEditMode = false
+      } else if (appProxy.state.media[index].type === 'image') {
+        appProxy.state.media[index].config.isImageTransformEditMode = false
       }
     }
 
@@ -64,6 +66,17 @@ function StartCompression() {
               ]?.config?.transformVideoConfig?.previewUrl
           }
           appProxy.state.media[index].config.isVideoTransformEditMode = false
+        } else if (appProxy.state.media[index].type === 'image') {
+          if (
+            appProxy.state.media[index]?.config?.shouldTransformImage &&
+            appProxy.state.media[index].config?.transformImageConfig?.previewUrl
+          ) {
+            appProxy.state.media[index].thumbnailPath =
+              appProxy.state.media[
+                index
+              ]?.config?.transformImageConfig?.previewUrl
+          }
+          appProxy.state.media[index].config.isImageTransformEditMode = false
         }
       }
 
@@ -133,9 +146,9 @@ function StartCompression() {
                       v.config?.customVideoCodec !== '-'
                         ? v.config.customVideoCodec
                         : null,
-                    transformsHistory: v.config?.shouldTransformVideo
-                      ? ((v.config.transformVideoConfig?.transformsHistory ??
-                          []) as VideoTransformsHistory[])
+                    transformHistory: v.config?.shouldTransformVideo
+                      ? ((v.config.transformVideoConfig?.transformHistory ??
+                          []) as MediaTransformHistory[])
                       : null,
                     metadataConfig:
                       !v.config?.shouldPreserveMetadata &&
@@ -204,7 +217,22 @@ function StartCompression() {
                       : (v.config.quality ?? 100),
                     stripMetadata: v.config.stripMetadata,
                     svgScaleFactor: v.config.svgScaleFactor ?? null,
-                    svgConfig: v.config.svgConfig ?? null,
+                    svgConfig: v.config?.shouldEnableAdvancedSvgSetting
+                      ? (v.config.svgConfig ?? null)
+                      : null,
+                    dimensions:
+                      v.config?.shouldEnableCustomDimensions &&
+                      v.config.customDimensions
+                        ? ([
+                            v.config.customDimensions[0],
+                            v.config.customDimensions[1],
+                          ] as [number, number])
+                        : null,
+                    transformHistory: v.config?.shouldTransformImage
+                      ? (v.config.transformImageConfig?.transformHistory as
+                          | MediaTransformHistory[]
+                          | null)
+                      : null,
                   } satisfies ImageCompressionConfig)
                 : undefined,
           })),

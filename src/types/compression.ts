@@ -159,13 +159,13 @@ export type ContainerInfo = {
   tags: [string, string][] | null
 }
 
-export type VideoTransforms = {
+export type MediaTransforms = {
   crop: { top: number; left: number; width: number; height: number }
   rotate: number
   flip: { horizontal: boolean; vertical: boolean }
 }
 
-export type VideoTransformsHistory =
+export type MediaTransformHistory =
   | {
       type: 'crop'
       value: { top: number; left: number; width: number; height: number }
@@ -217,7 +217,7 @@ export type VideoCompressionConfig = {
   dimensions?: [number, number] | null
   fps?: string | null
   videoCodec?: string | null
-  transformsHistory?: VideoTransformsHistory[] | null
+  transformHistory?: MediaTransformHistory[] | null
   metadataConfig?: VideoMetadataConfig | null
   customThumbnailPath?: string | null
   trimSegments?: VideoTrimSegment[] | null
@@ -256,6 +256,8 @@ export type ImageCompressionConfig = {
   stripMetadata: boolean
   svgScaleFactor: number | null
   svgConfig?: SvgConfig | null
+  dimensions?: [number, number] | null
+  transformHistory?: MediaTransformHistory[] | null
 }
 
 export type MediaItem = {

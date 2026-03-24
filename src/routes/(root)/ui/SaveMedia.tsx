@@ -150,7 +150,10 @@ function SaveMedia() {
       >
         {isSaving ? 'Saving...' : isSaved ? 'Saved' : `Save Media`}
         {!isSaving ? (
-          <Icon name={isSaved ? 'tick' : 'save'} className="text-green-300" />
+          <Icon
+            name={isSaved ? 'tick' : 'download'}
+            className="text-green-300"
+          />
         ) : null}
       </Button>
       {isSaved ? (

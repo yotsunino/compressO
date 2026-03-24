@@ -244,3 +244,7 @@ body > * {
   width: 45px !important;
   height: 45px !important;
 }
+
+.advanced-cropper {
+  @apply !bg-white1 dark:!bg-black1;
+}

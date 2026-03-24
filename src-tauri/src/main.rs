@@ -4,6 +4,7 @@
 mod core;
 mod sys;
 mod tauri_commands;
+mod utils;
 
 use std::sync::{Arc, Mutex, OnceLock};
 use sys::fs::{self as file_system};

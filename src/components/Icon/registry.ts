@@ -28,7 +28,6 @@ import Play from '@/assets/icons/play.svg?react'
 import Question from '@/assets/icons/question.svg?react'
 import Redo from '@/assets/icons/redo.svg?react'
 import RotateLeft from '@/assets/icons/rotate-left.svg?react'
-import Save from '@/assets/icons/save.svg?react'
 import Setting from '@/assets/icons/setting.svg?react'
 import Star from '@/assets/icons/star.svg?react'
 import Sun from '@/assets/icons/sun.svg?react'
@@ -54,7 +53,6 @@ const registry = asRegistry({
   copy: Copy,
   cross: Cross,
   curvedArrow: CurvedArrow,
-  save: Save,
   tick: Tick,
   fileExplorer: FileExplorer,
   play: Play,

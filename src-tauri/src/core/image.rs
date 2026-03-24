@@ -1,11 +1,12 @@
 use crate::core::domain::{
     BatchImageCompressionProgress, CustomEvents, ImageBatchCompressionResult,
     ImageBatchIndividualCompressionResult, ImageCompressionConfig, ImageCompressionProgress,
-    ImageCompressionResult, ImageContainer, SvgConfig,
+    ImageCompressionResult, ImageContainer, MediaTransformHistory, SvgConfig,
 };
+use crate::core::ffmpeg::build_ffmpeg_filters;
 use crate::core::ffmpeg::FFMPEG;
 use crate::core::media_process::MediaProcessExecutorBuilder;
-use crate::sys::fs::get_file_metadata;
+use crate::sys::fs::{get_file_metadata, get_image_dimension};
 use image::{ImageEncoder, ImageReader};
 use img_parts::{
     jpeg::Jpeg,
@@ -91,6 +92,8 @@ impl ImageCompressor {
         batch_id: Option<&str>,
         strip_metadata: Option<bool>,
         svg_config: Option<SvgConfig>,
+        dimensions: Option<(f64, f64)>,
+        transform_history: Option<&MediaTransformHistory>,
     ) -> Result<ImageCompressionResult, String> {
         let original_path = Path::new(input_path);
         if !original_path.exists() {
@@ -98,8 +101,8 @@ impl ImageCompressor {
         }
 
         let original_metadata = get_file_metadata(input_path)?;
-
         let original_extension = original_metadata.extension.to_lowercase();
+
         let output_extension = convert_to_extension;
 
         let supported = EXTENSIONS.iter().any(|&ext| ext == output_extension);
@@ -133,12 +136,64 @@ impl ImageCompressor {
             None => nanoid!(),
         };
 
+        let transform_input_path = if !original_extension.eq("svg")
+            && (dimensions.is_some() || transform_history.is_some())
+        {
+            log::info!("[image] Applying transformations before compression");
+            let transform_temp_filename =
+                format!("{}_transformed.{}", image_id, original_extension);
+            let transform_temp_path: PathBuf = [
+                self.assets_dir.clone(),
+                PathBuf::from(&transform_temp_filename),
+            ]
+            .iter()
+            .collect();
+
+            // only send the dimensions to ffmpeg if the new dimension > original dimension; otherwise gifski will handle it
+            let filtered_dimensions = if original_extension.eq("gif") {
+                if let Ok((original_width, _1)) = get_image_dimension(input_path) {
+                    if let Some((new_width, _2)) = dimensions {
+                        if new_width > (original_width as f64) {
+                            dimensions
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            } else {
+                dimensions
+            };
+
+            self.apply_spatial_transformations(
+                input_path,
+                transform_temp_path.to_str().unwrap(),
+                filtered_dimensions,
+                transform_history,
+            )
+            .await?;
+
+            let transform_temp_path_clone = transform_temp_path.clone();
+            tokio::spawn(async move {
+                // Give it a moment before cleanup
+                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                let _ = fs::remove_file(&transform_temp_path_clone);
+            });
+
+            transform_temp_path.to_str().unwrap().to_string()
+        } else {
+            input_path.to_string()
+        };
+
         let compression_output_path = intermediate_path.as_ref().unwrap_or(&output_path);
 
         match original_extension.as_str() {
             "png" => {
                 self.compress_png(
-                    input_path,
+                    &transform_input_path,
                     compression_output_path.to_str().unwrap(),
                     image_id,
                     batch_id.as_str(),
@@ -149,7 +204,7 @@ impl ImageCompressor {
             }
             "jpg" | "jpeg" => {
                 self.compress_jpeg(
-                    input_path,
+                    &transform_input_path,
                     compression_output_path.to_str().unwrap(),
                     image_id,
                     batch_id.as_str(),
@@ -160,7 +215,7 @@ impl ImageCompressor {
             }
             "webp" => {
                 self.compress_webp(
-                    input_path,
+                    &transform_input_path,
                     compression_output_path.to_str().unwrap(),
                     is_lossless.unwrap_or(true),
                     quality,
@@ -169,12 +224,13 @@ impl ImageCompressor {
             }
             "gif" => {
                 self.compress_gif(
-                    input_path,
+                    &transform_input_path,
                     compression_output_path.to_str().unwrap(),
                     image_id,
                     batch_id.as_str(),
                     is_lossless.unwrap_or(true),
                     quality,
+                    dimensions,
                 )
                 .await?
             }
@@ -182,8 +238,11 @@ impl ImageCompressor {
                 if convert_to_extension != "svg" {
                     // Completely skip the compression for svg if converting to another format
                 } else {
-                    self.compress_svg(input_path, compression_output_path.to_str().unwrap())
-                        .await?
+                    self.compress_svg(
+                        &transform_input_path,
+                        compression_output_path.to_str().unwrap(),
+                    )
+                    .await?
                 }
             }
             _ => {
@@ -196,7 +255,7 @@ impl ImageCompressor {
 
         if !Path::exists(&compression_output_path) {
             // If compression was skipped, copy the original file
-            fs::copy(input_path, &compression_output_path).map_err(|e| e.to_string())?;
+            fs::copy(&transform_input_path, &compression_output_path).map_err(|e| e.to_string())?;
         }
 
         if need_conversion {
@@ -353,6 +412,8 @@ impl ImageCompressor {
             let strip_metadata = image_config.strip_metadata.unwrap_or(true);
             let is_lossless = image_config.is_lossless;
             let svg_config = image_config.svg_config.clone();
+            let dimensions = image_config.dimensions;
+            let transform_history = image_config.transform_history.as_ref();
 
             match self
                 .compress_image(
@@ -365,6 +426,8 @@ impl ImageCompressor {
                     Some(batch_id),
                     Some(strip_metadata),
                     svg_config,
+                    dimensions,
+                    transform_history,
                 )
                 .await
             {
@@ -592,6 +655,7 @@ impl ImageCompressor {
         batch_id: &str,
         is_lossless: bool,
         quality: u8,
+        dimensions: Option<(f64, f64)>,
     ) -> Result<(), String> {
         let output_path_str = output_path.to_string();
 
@@ -603,7 +667,20 @@ impl ImageCompressor {
 
         let quality_str = gifski_quality.to_string();
 
-        let args = vec!["-Q", &quality_str, "-o", &output_path_str, input_path];
+        let mut args = vec!["-Q", &quality_str];
+
+        let width_string: String = if dimensions.is_some() {
+            let (w, _) = dimensions.unwrap();
+            (w.round() as u32).to_string()
+        } else {
+            String::from("")
+        };
+
+        if width_string.len() > 0 {
+            args.extend_from_slice(&["-W", &width_string]);
+        }
+
+        args.extend_from_slice(&["-o", &output_path_str, input_path]);
 
         log::info!("[image] gifski command: {:?}", args);
 
@@ -960,6 +1037,64 @@ impl ImageCompressor {
 
                 fs::write(dst, dst_jpeg.encoder().bytes()).map_err(|err| err.to_string())?;
             }
+        }
+
+        Ok(())
+    }
+
+    /// Applies spatial transformations (crop, rotate, flip, scale) to an image using FFmpeg
+    async fn apply_spatial_transformations(
+        &self,
+        input_path: &str,
+        output_path: &str,
+        dimensions: Option<(f64, f64)>,
+        transform_history: Option<&MediaTransformHistory>,
+    ) -> Result<(), String> {
+        if !PathBuf::from(input_path).exists() {
+            return Err(String::from("Input image file does not exist."));
+        }
+
+        let filter_complex = build_ffmpeg_filters(transform_history, dimensions);
+
+        let mut cmd_args: Vec<String> = Vec::new();
+        cmd_args.push("-i".to_string());
+        cmd_args.push(input_path.to_string());
+
+        if !filter_complex.is_empty() {
+            cmd_args.push("-vf".to_string());
+            cmd_args.push(filter_complex);
+        }
+
+        cmd_args.push("-map_metadata".to_string());
+        cmd_args.push("-1".to_string());
+
+        cmd_args.push("-y".to_string());
+        cmd_args.push(output_path.to_string());
+
+        log::info!("[image-transform] FFmpeg command: {:?}", cmd_args);
+
+        let ffmpeg = FFMPEG::new(&self.app)?;
+        let mut ffmpeg_cmd = ffmpeg.get_ffmpeg_command()?;
+
+        ffmpeg_cmd.args(&cmd_args);
+
+        let executor = MediaProcessExecutorBuilder::new(self.app.clone())
+            .command(ffmpeg_cmd)
+            .build()?;
+
+        let result = executor.spawn_and_wait().await?;
+
+        if !result.success() {
+            return Err(String::from("FFmpeg transformation failed"));
+        }
+
+        if !PathBuf::from(output_path).exists() {
+            return Err(String::from("Transformed output file was not created"));
+        }
+
+        let output_metadata = get_file_metadata(&output_path)?;
+        if output_metadata.size == 0 {
+            return Err(String::from("Transformed output file is empty"));
         }
 
         Ok(())

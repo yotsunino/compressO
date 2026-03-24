@@ -11,55 +11,134 @@ import Tooltip from '@/components/Tooltip'
 import { MediaTransformHistory, MediaTransforms } from '@/types/compression'
 import { appProxy } from '../-state'
 
-type VideoTransformerProps = {
+type MediaTransformerProps = {
   mediaIndex: number
 }
 
-function VideoTransformer({ mediaIndex }: VideoTransformerProps) {
-  if (mediaIndex < 0) return
+function MediaTransformer({ mediaIndex }: MediaTransformerProps) {
+  if (mediaIndex < 0) return null
 
   const {
     state: { media },
   } = useSnapshot(appProxy)
-  const video =
-    media.length > 0 && media[mediaIndex].type === 'video'
-      ? media[mediaIndex]
-      : null
-  const { config, thumbnailPathRaw } = video ?? {}
-  const { shouldTransformVideo } = config ?? {}
 
-  const cropperRef = useRef<CropperRef>(null)
-  const debouncedRef = useRef<NodeJS.Timeout | null>(null)
+  const mediaItem = media[mediaIndex]
 
-  const recordTransformHistory = (action: MediaTransformHistory) => {
-    const targetVideo = appProxy.state.media[mediaIndex]
-    if (!targetVideo || !targetVideo.config || targetVideo.type !== 'video')
-      return
+  const handleTransformChange = (
+    transforms: MediaTransforms,
+    previewUrl: string,
+  ) => {
+    const targetMedia = appProxy.state.media[mediaIndex]
+    if (!targetMedia?.config) return
 
-    const transformHistory =
-      targetVideo.config?.transformVideoConfig?.transformHistory ?? []
+    if (targetMedia.type === 'video') {
+      const transformConfig = targetMedia.config.transformVideoConfig
+      targetMedia.config.transformVideoConfig = {
+        ...transformConfig,
+        transforms: transforms as MediaTransforms,
+        previewUrl,
+        transformHistory:
+          transformConfig?.transformHistory ?? ([] as MediaTransformHistory[]),
+      }
+    } else if (mediaItem.type === 'image') {
+      const transformConfig = targetMedia.config.transformImageConfig
+      targetMedia.config.transformImageConfig = {
+        ...transformConfig,
+        transforms: transforms as MediaTransforms,
+        previewUrl,
+        transformHistory:
+          transformConfig?.transformHistory ?? ([] as MediaTransformHistory[]),
+      }
+    }
+  }
 
-    transformHistory.push(action)
+  const handleTransformHistoryChange = (action: MediaTransformHistory) => {
+    const targetMedia = appProxy.state.media[mediaIndex]
+    if (!targetMedia?.config) return
 
-    if (targetVideo?.config?.transformVideoConfig) {
-      targetVideo.config.transformVideoConfig.transformHistory =
-        transformHistory
-    } else {
-      targetVideo.config.transformVideoConfig = {
-        transforms: {
-          crop: { width: 0, height: 0, top: 0, left: 0 },
-          flip: { horizontal: false, vertical: false },
-          rotate: 0,
-        },
+    if (targetMedia.type === 'video') {
+      const transformConfig = targetMedia.config.transformVideoConfig
+      const transformHistory = transformConfig?.transformHistory ?? []
+
+      transformHistory.push(action)
+
+      targetMedia.config.transformVideoConfig = {
+        ...(transformConfig! ?? {}),
+        transformHistory,
+      }
+    } else if (mediaItem.type === 'image') {
+      const transformConfig = targetMedia.config.transformImageConfig
+      const transformHistory = transformConfig?.transformHistory ?? []
+
+      transformHistory.push(action)
+
+      targetMedia.config.transformImageConfig = {
+        ...(transformConfig! ?? {}),
         transformHistory,
       }
     }
   }
 
+  const src =
+    mediaItem.type === 'video'
+      ? core.convertFileSrc(mediaItem.thumbnailPathRaw!)
+      : core.convertFileSrc(mediaItem.thumbnailPathRaw!)
+
+  const initialTransforms =
+    mediaItem.type === 'video'
+      ? mediaItem.config.transformVideoConfig?.transforms
+      : mediaItem.config.transformImageConfig?.transforms
+
+  const shouldTransform =
+    mediaItem.type === 'video'
+      ? mediaItem.config.shouldTransformVideo
+      : mediaItem.config.shouldTransformImage
+
+  useEffect(() => {
+    if (shouldTransform && mediaItem.config) {
+      // Trigger cropper refresh if needed
+      const targetMedia = appProxy.state.media[mediaIndex]
+      if (targetMedia) {
+        // Force re-render by updating a timestamp or similar if needed
+      }
+    }
+  }, [shouldTransform, mediaIndex, mediaItem.config])
+
+  if (!src) return null
+
+  return (
+    <Transformer
+      src={src}
+      initialTransforms={initialTransforms}
+      onTransformChange={handleTransformChange}
+      onTransformHistoryChange={handleTransformHistoryChange}
+    />
+  )
+}
+
+type TransformerProps = {
+  src: string
+  initialTransforms?: MediaTransforms
+  onTransformChange: (transforms: MediaTransforms, previewUrl: string) => void
+  onTransformHistoryChange: (action: MediaTransformHistory) => void
+}
+
+function Transformer({
+  src,
+  initialTransforms,
+  onTransformChange,
+  onTransformHistoryChange,
+}: TransformerProps) {
+  const cropperRef = useRef<CropperRef>(null)
+  const debouncedRef = useRef<NodeJS.Timeout | null>(null)
+
   const flip = (horizontal: boolean, vertical: boolean) => {
     if (cropperRef.current) {
       cropperRef.current.flipImage(horizontal, vertical)
-      recordTransformHistory({ type: 'flip', value: { horizontal, vertical } })
+      onTransformHistoryChange({
+        type: 'flip',
+        value: { horizontal, vertical },
+      })
     }
   }
 
@@ -76,7 +155,7 @@ function VideoTransformer({ mediaIndex }: VideoTransformerProps) {
   const rotate = (angle: number) => {
     if (cropperRef.current) {
       cropperRef.current.rotateImage(angle)
-      recordTransformHistory({
+      onTransformHistoryChange({
         type: 'rotate',
         value: angle,
       })
@@ -94,16 +173,12 @@ function VideoTransformer({ mediaIndex }: VideoTransformerProps) {
           width: visibleArea.width,
           height: visibleArea.height,
         })
+        // This is related to crop so it's history will be recorded on `onChange` handler
       }
-      // This is related to crop so it's history will be recorded on `onChange` handler
     }
   }
 
   const onChange = (cropper: CropperRef) => {
-    const targetVideo = appProxy.state.media[mediaIndex]
-    if (!targetVideo || !targetVideo.config || targetVideo.type !== 'video')
-      return
-
     if (debouncedRef.current) {
       clearTimeout(debouncedRef.current)
     }
@@ -114,16 +189,8 @@ function VideoTransformer({ mediaIndex }: VideoTransformerProps) {
         const blob = await new Promise<Blob | null>((resolve) =>
           canvas.toBlob(resolve, 'image/png'),
         )
-        if (targetVideo.config?.transformVideoConfig?.previewUrl) {
-          URL.revokeObjectURL(
-            targetVideo?.config?.transformVideoConfig?.previewUrl!,
-          )
-        }
         const coordinates = cropperState.coordinates
         const transforms = cropperState.transforms
-
-        const transformHistory =
-          targetVideo.config.transformVideoConfig?.transformHistory ?? []
 
         const newTransforms: MediaTransforms = {
           crop: {
@@ -139,37 +206,28 @@ function VideoTransformer({ mediaIndex }: VideoTransformerProps) {
           },
         }
 
+        // Check if crop changed and record history
+        const prevCrop = initialTransforms?.crop
         if (
-          JSON.stringify(
-            targetVideo.config.transformVideoConfig?.transforms?.crop,
-          ) !== JSON.stringify(newTransforms?.crop)
+          !prevCrop ||
+          JSON.stringify(prevCrop) !== JSON.stringify(newTransforms.crop)
         ) {
-          transformHistory.push({
+          onTransformHistoryChange({
             type: 'crop',
             value: newTransforms.crop,
           })
         }
 
-        targetVideo.config.transformVideoConfig = {
-          transforms: newTransforms,
-          previewUrl: URL.createObjectURL(blob!),
-          transformHistory,
-        }
+        onTransformChange(newTransforms, URL.createObjectURL(blob!))
       }
     }, 500)
   }
 
-  useEffect(() => {
-    if (shouldTransformVideo && cropperRef.current) {
-      cropperRef.current?.refresh?.()
-    }
-  }, [shouldTransformVideo])
-
-  return video ? (
+  return (
     <>
       <Cropper
         ref={cropperRef}
-        src={core.convertFileSrc(thumbnailPathRaw!)}
+        src={src}
         stencilProps={{
           grid: true,
         }}
@@ -177,11 +235,7 @@ function VideoTransformer({ mediaIndex }: VideoTransformerProps) {
         className="w-full h-full"
         boundaryClassName="max-w-full max-h-full w-full h-full object-contain"
         defaultCoordinates={(state: CropperState) => {
-          const crop =
-            appProxy.state.media[mediaIndex].type === 'video'
-              ? appProxy.state.media[mediaIndex].config.transformVideoConfig
-                  ?.transforms?.crop
-              : null
+          const crop = initialTransforms?.crop
           return {
             left: crop?.left ?? 0,
             top: crop?.top ?? 0,
@@ -190,33 +244,21 @@ function VideoTransformer({ mediaIndex }: VideoTransformerProps) {
           }
         }}
         defaultPosition={() => {
-          const crop =
-            appProxy.state.media[mediaIndex].type === 'video'
-              ? appProxy.state.media[mediaIndex].config.transformVideoConfig
-                  ?.transforms?.crop
-              : null
+          const crop = initialTransforms?.crop
           return {
             left: crop?.left ?? 0,
             top: crop?.top ?? 0,
           }
         }}
         defaultSize={(state: CropperState) => {
-          const crop =
-            appProxy.state.media[mediaIndex].type === 'video'
-              ? appProxy.state.media[mediaIndex].config.transformVideoConfig
-                  ?.transforms?.crop
-              : null
+          const crop = initialTransforms?.crop
           return {
             width: crop?.width ?? state.imageSize.width,
             height: crop?.height ?? state.imageSize.height,
           }
         }}
         defaultTransforms={() => {
-          const transforms =
-            appProxy.state.media[mediaIndex].type === 'video'
-              ? appProxy.state.media[mediaIndex].config.transformVideoConfig
-                  ?.transforms
-              : null
+          const transforms = initialTransforms
           return {
             rotate: transforms?.rotate ?? 0,
             flip: {
@@ -240,7 +282,7 @@ function VideoTransformer({ mediaIndex }: VideoTransformerProps) {
             <Tooltip content="Flip Vertical" aria-label="Flip Vertical">
               <Icon name="flipVertical" size={20} />
             </Tooltip>
-          </Button>{' '}
+          </Button>
           <Divider className="my-3 h-5" orientation="vertical" />
         </>
         <>
@@ -248,16 +290,16 @@ function VideoTransformer({ mediaIndex }: VideoTransformerProps) {
             <Tooltip content="Flip Horizontal" aria-label="Flip Horizontal">
               <Icon name="flipHorizontal" size={20} />
             </Tooltip>
-          </Button>{' '}
+          </Button>
           <Divider className="my-3 h-5" orientation="vertical" />
-        </>{' '}
+        </>
         <>
           <Button size="sm" isIconOnly onPress={resetZoom}>
             <Tooltip content="Reset Zoom" aria-label="Reset Zoom">
               <Icon name="zoom" size={20} />
             </Tooltip>
             <Divider className="my-3 h-5" orientation="vertical" />
-          </Button>{' '}
+          </Button>
           <Divider className="my-3 h-5" orientation="vertical" />
         </>
         <>
@@ -269,7 +311,7 @@ function VideoTransformer({ mediaIndex }: VideoTransformerProps) {
         </>
       </div>
     </>
-  ) : null
+  )
 }
 
-export default VideoTransformer
+export default MediaTransformer

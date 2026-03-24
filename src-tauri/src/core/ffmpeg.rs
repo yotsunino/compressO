@@ -1,16 +1,16 @@
 use crate::core::domain::{
     AudioConfig, BatchCompressionResult, BatchVideoCompressionProgress,
-    BatchVideoIndividualCompressionResult, CustomEvents, SubtitlesConfig, VideoCompressionConfig,
-    VideoCompressionProgress, VideoCompressionResult, VideoMetadataConfig, VideoThumbnail,
-    VideoTrimSegment,
+    BatchVideoIndividualCompressionResult, CustomEvents, MediaTransform, MediaTransformCrop,
+    MediaTransformHistory, SubtitlesConfig, VideoCompressionConfig, VideoCompressionProgress,
+    VideoCompressionResult, VideoMetadataConfig, VideoThumbnail, VideoTrimSegment,
 };
 use crate::core::ffprobe::FFPROBE;
 use crate::core::image::ImageCompressor;
 use crate::core::media_process::{CancelCallback, MediaProcessExecutorBuilder};
 use crate::sys::fs::get_file_metadata;
+use crate::utils;
 use nanoid::nanoid;
 use regex::Regex;
-use serde_json::Value;
 use std::{
     path::{Path, PathBuf},
     process::Command,
@@ -68,10 +68,10 @@ impl FFMPEG {
         batch_id: Option<&str>,
         audio_config: &AudioConfig,
         quality: u16,
-        dimensions: Option<(u32, u32)>,
+        dimensions: Option<(f64, f64)>,
         fps: Option<&str>,
         video_codec: Option<&str>,
-        transforms_history: Option<&Vec<Value>>,
+        transform_history: Option<&MediaTransformHistory>,
         metadata_config: Option<&VideoMetadataConfig>,
         custom_thumbnail_path: Option<&str>,
         trim_segments: Option<&Vec<VideoTrimSegment>>,
@@ -253,26 +253,8 @@ impl FFMPEG {
             cmd_args.extend_from_slice(&["-crf", compression_quality.as_str()]);
         }
 
-        // Transforms
-        let transform_filters = if let Some(transforms) = transforms_history {
-            self.build_ffmpeg_filters(transforms)
-        } else {
-            String::from("")
-        };
-
-        // Dimensions
-        let padding = "pad=ceil(iw/2)*2:ceil(ih/2)*2";
-
         // Build the post-processing chain for video (transforms + scale + pad)
-        let mut video_post_chain: Vec<String> = Vec::new();
-        if !transform_filters.is_empty() {
-            video_post_chain.push(transform_filters.clone());
-        }
-        if let Some((width, height)) = dimensions {
-            video_post_chain.push(format!("scale={}:{}", width, height));
-        }
-        video_post_chain.push(String::from(padding));
-        let video_post_process = video_post_chain.join(",");
+        let video_post_process = build_ffmpeg_filters(transform_history, dimensions);
 
         let mut filter_complex_parts: Vec<String> = Vec::new();
         let mut map_video = false;
@@ -794,10 +776,7 @@ impl FFMPEG {
             let dimensions = video_options.dimensions;
             let fps = video_options.fps.as_deref();
             let video_codec = video_options.video_codec.as_deref();
-            let transforms_history = video_options
-                .transforms_history
-                .as_ref()
-                .map(|v| v.as_ref());
+            let transform_history = video_options.transform_history.as_ref().map(|v| v.as_ref());
             let metadata_config = video_options.metadata_config.as_ref();
             let thumbnail_path = video_options.custom_thumbnail_path.as_deref();
             let trim_segments = video_options.trim_segments.as_ref();
@@ -815,7 +794,7 @@ impl FFMPEG {
                     dimensions,
                     fps,
                     video_codec,
-                    transforms_history,
+                    transform_history,
                     metadata_config,
                     thumbnail_path,
                     trim_segments,
@@ -995,7 +974,7 @@ impl FFMPEG {
         video_path: &str,
         quality: u8,
         video_id: &str,
-        dimensions: Option<(u32, u32)>,
+        dimensions: Option<(f64, f64)>,
         fps: Option<&str>,
     ) -> Result<PathBuf, String> {
         let output_filename = format!("{}.gif", video_id);
@@ -1076,8 +1055,10 @@ impl FFMPEG {
                         let current_duration = time.as_str();
                         if !current_duration.is_empty() {
                             let combined_duration = if let Some(sum) =
-                                add_ffmpeg_times(&video_duration_offset_clone, current_duration)
-                            {
+                                utils::duration::add_durations(&[
+                                    &video_duration_offset_clone,
+                                    current_duration,
+                                ]) {
                                 sum
                             } else {
                                 current_duration.to_string()
@@ -1117,17 +1098,22 @@ impl FFMPEG {
 
         Ok(output_path)
     }
+}
 
-    fn build_ffmpeg_filters(&self, actions: &Vec<Value>) -> String {
-        let mut filters: Vec<String> = Vec::new();
-        let mut latest_crop: Option<&Value> = None;
+/// Builds complete FFmpeg filter complex for video/image post-processing
+/// Combines transforms (crop, rotate, flip) + scale (dimensions) + padding
+pub fn build_ffmpeg_filters(
+    transform_history: Option<&MediaTransformHistory>,
+    dimensions: Option<(f64, f64)>,
+) -> String {
+    let mut filters: Vec<String> = Vec::new();
+    let mut latest_crop: Option<&MediaTransformCrop> = None;
 
+    if let Some(actions) = transform_history {
         for action in actions {
-            let action_type = action["type"].as_str().unwrap_or("");
-
-            match action_type {
-                "rotate" => {
-                    let angle = action["value"].as_i64().unwrap_or(0);
+            match action {
+                MediaTransform::Rotate { value } => {
+                    let angle = *value;
                     match angle % 360 {
                         -90 | 270 => filters.push("transpose=2".to_string()),
                         90 | -270 => filters.push("transpose=1".to_string()),
@@ -1135,58 +1121,38 @@ impl FFMPEG {
                         _ => {}
                     }
                 }
-                "flip" => {
-                    if let Some(flip_obj) = action["value"].as_object() {
-                        if flip_obj.get("horizontal").and_then(|v| v.as_bool()) == Some(true) {
-                            filters.push("hflip".to_string());
-                        }
-                        if flip_obj.get("vertical").and_then(|v| v.as_bool()) == Some(true) {
-                            filters.push("vflip".to_string());
-                        }
+                MediaTransform::Flip { value } => {
+                    if value.horizontal {
+                        filters.push("hflip".to_string());
+                    }
+                    if value.vertical {
+                        filters.push("vflip".to_string());
                     }
                 }
-                "crop" => {
-                    latest_crop = Some(&action["value"]);
+                MediaTransform::Crop { value } => {
+                    latest_crop = Some(value);
                 }
-                _ => {}
             }
         }
-
-        // Apply only the last crop
-        if let Some(c) = latest_crop {
-            let w = c["width"].as_f64().unwrap_or(0.0).round() as i64;
-            let h = c["height"].as_f64().unwrap_or(0.0).round() as i64;
-            let x = c["left"].as_f64().unwrap_or(0.0).round() as i64;
-            let y = c["top"].as_f64().unwrap_or(0.0).round() as i64;
-
-            filters.push(format!("crop={}:{}:{}:{}", w, h, x, y));
-        }
-
-        filters.join(",")
     }
-}
 
-/// Adds two FFmpeg time strings in format "HH:MM:SS.MM" and returns the sum in the same format
-fn add_ffmpeg_times(time1: &str, time2: &str) -> Option<String> {
-    let parse_time = |time_str: &str| -> Option<f64> {
-        let parts: Vec<&str> = time_str.split(':').collect();
-        if parts.len() != 3 {
-            return None;
-        }
-        let hours: f64 = parts[0].parse().ok()?;
-        let minutes: f64 = parts[1].parse().ok()?;
-        let seconds: f64 = parts[2].parse().ok()?;
-        Some(hours * 3600.0 + minutes * 60.0 + seconds)
-    };
+    // Apply only the last crop
+    if let Some(c) = latest_crop {
+        let w = c.width.round() as i64;
+        let h = c.height.round() as i64;
+        let x = c.left.round() as i64;
+        let y = c.top.round() as i64;
 
-    let time1_seconds = parse_time(time1)?;
-    let time2_seconds = parse_time(time2)?;
-    let total_seconds = time1_seconds + time2_seconds;
+        filters.push(format!("crop={}:{}:{}:{}", w, h, x, y));
+    }
 
-    // Convert back to HH:MM:SS.MM format
-    let hours = (total_seconds / 3600.0) as u32;
-    let minutes = ((total_seconds % 3600.0) / 60.0) as u32;
-    let seconds = total_seconds % 60.0;
+    if let Some((width, height)) = dimensions {
+        let w = width.round() as i64;
+        let h = height.round() as i64;
+        filters.push(format!("scale={}:{}:flags=lanczos", w, h));
+    }
 
-    Some(format!("{:02}:{:02}:{:05.2}", hours, minutes, seconds))
+    filters.push("pad=ceil(iw/2)*2:ceil(ih/2)*2".to_string());
+
+    filters.join(",")
 }

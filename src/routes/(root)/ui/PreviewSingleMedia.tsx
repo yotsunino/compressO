@@ -27,7 +27,7 @@ function PreviewSingleMedia({ mediaIndex }: PreviewSingleMediaProps) {
   if (mediaIndex < 0) return
 
   const {
-    state: { media, isCompressing, isProcessCompleted, showMediaInfo },
+    state: { media, isProcessCompleted, isCompressing, showMediaInfo },
   } = useSnapshot(appProxy)
   const mediaFile = media.length > 0 ? media[mediaIndex] : null
   const {
@@ -43,6 +43,8 @@ function PreviewSingleMedia({ mediaIndex }: PreviewSingleMediaProps) {
     mediaFile?.type === 'video' ? (mediaFile ?? {}) : {}
   const { isVideoTransformEditMode, isVideoTrimEditMode } =
     mediaFile?.type === 'video' ? (mediaFile?.config ?? {}) : {}
+  const { isImageTransformEditMode } =
+    mediaFile?.type === 'image' ? (mediaFile?.config ?? {}) : {}
 
   const [compareOutput, setCompareOutput] = useState(true)
 
@@ -68,14 +70,21 @@ function PreviewSingleMedia({ mediaIndex }: PreviewSingleMediaProps) {
       ? mediaFile?.compressedFile?.fileNameToDisplay
       : mediaFile?.fileName) ?? ''
 
+  const isMediaTransformEditMode =
+    isVideoTransformEditMode || isImageTransformEditMode
+  const isMediaTrimEditMode = isVideoTrimEditMode
+
   return !isCompressing ? (
     <motion.div
-      className="w-full h-full flex flex-col justify-center items-center"
+      className="w-full h-full flex flex-col justify-center"
       {...zoomInTransition}
     >
-      {!(isVideoTransformEditMode || isVideoTrimEditMode) &&
+      {!(isMediaTransformEditMode || isMediaTrimEditMode) &&
       !isProcessCompleted ? (
-        <Code size="sm" className="mb-3 text-center rounded-xl px-4 text-xs">
+        <Code
+          size="sm"
+          className="w-fit mx-auto mb-3 text-center rounded-xl px-4 text-xs"
+        >
           {singleFileNameDisplay?.length > 50
             ? `${singleFileNameDisplay?.slice(0, 20)}...${singleFileNameDisplay?.slice(
                 -10,
@@ -114,7 +123,7 @@ function PreviewSingleMedia({ mediaIndex }: PreviewSingleMediaProps) {
         )
       ) : null}
 
-      {!(isVideoTransformEditMode || isVideoTrimEditMode) ? (
+      {!(isMediaTransformEditMode || isMediaTrimEditMode) ? (
         isProcessCompleted ? (
           <section className="animate-appearance-in">
             <div className="flex justify-center items-center mt-2">
@@ -210,7 +219,7 @@ function PreviewSingleMedia({ mediaIndex }: PreviewSingleMediaProps) {
       ) : null}
       {showMediaInfo ? (
         <motion.div
-          className="absolute right-0 bottom-0 left-0 top-0 w-full h-full z-[10] bg-white1 dark:bg-black1 p-6"
+          className="absolute right-0 bottom-0 left-0 top-0 w-full h-full z-[10] bg-white1 dark:bg-black1 p-6 rounded-xl"
           {...slideUpTransition}
         >
           <div className="2xl:max-w-[50vw] mx-auto">
@@ -244,11 +253,20 @@ function PreviewSingleMedia({ mediaIndex }: PreviewSingleMediaProps) {
       transition={{ type: 'spring', duration: 0.6 }}
     >
       <div className="relative">
-        <Ripple
-          mainCircleOpacity={0.2}
-          mainCircleSize={380}
-          className="absolute top-0 left-0"
-        />
+        <div className="block xl:hidden">
+          <Ripple
+            mainCircleOpacity={0.18}
+            mainCircleSize={350}
+            className="absolute top-1/2 left-1/2 translate-x-[-50%] translate-y-[-50%]"
+          />
+        </div>
+        <div className="hidden xl:block">
+          <Ripple
+            mainCircleOpacity={0.2}
+            mainCircleSize={380}
+            className="absolute top-1/2 left-1/2 translate-x-[-50%] translate-y-[-50%]"
+          />
+        </div>
         <CircularProgress
           {...(videoDuration == null
             ? { isIndeterminate: true }
@@ -268,18 +286,20 @@ function PreviewSingleMedia({ mediaIndex }: PreviewSingleMediaProps) {
           src={thumbnailPath as string}
           className="z-0 w-[400px] h-[400px] min-w-[400px] min-h-[400px] hlg:w-[450px] hlg:h-[450px] hlg:min-w-[450px] hlg:min-h-[450px] object-cover rounded-full flex-shrink-0"
         />
-        <div className="blur-2xl  z-[10] absolute top-0 right-0 bottom-0 left-0 rounded-full" />
+        <div className="flex flex-col justify-center absolute top-1/2 left-1/2  translate-x-[-50%] translate-y-[-50%] z-[11] text-white1">
+          <p className=" text-sm mt-10 text-center animate-pulse">
+            Processing...
+          </p>
+          <p
+            className={`text-2xl text-center font-bold my-2 opacity-${
+              compressionProgress && compressionProgress > 0 ? 1 : 0
+            }`}
+          >
+            {compressionProgress?.toFixed(2)}%
+          </p>
+        </div>
+        <div className="bg-black/60 z-[10] absolute top-0 right-0 bottom-0 left-0 rounded-full" />
       </div>
-      <p className=" text-sm mt-10 text-gray-600 dark:text-gray-400 text-center animate-pulse">
-        Processing...
-      </p>
-      <p
-        className={`not- text-2xl text-center font-bold text-primary my-4 opacity-${
-          compressionProgress && compressionProgress > 0 ? 1 : 0
-        }`}
-      >
-        {compressionProgress?.toFixed(2)}%
-      </p>
     </motion.div>
   )
 }

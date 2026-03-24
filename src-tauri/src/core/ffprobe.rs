@@ -62,7 +62,7 @@ impl FFPROBE {
             .map_err(|e| format!("Failed to parse ffprobe output: {}", e))?;
 
         let mut duration: Option<f64> = None;
-        let mut dimensions: Option<(u32, u32)> = None;
+        let mut dimensions: Option<(f64, f64)> = None;
         let mut fps: Option<f32> = None;
 
         // Parse duration from format (in seconds)
@@ -82,7 +82,7 @@ impl FFPROBE {
                     stream.get("width").and_then(|v| v.as_u64()),
                     stream.get("height").and_then(|v| v.as_u64()),
                 ) {
-                    dimensions = Some((w as u32, h as u32));
+                    dimensions = Some((w as f64, h as f64));
                 }
 
                 // Parse FPS from r_frame_rate (e.g., "30000/1001" or "30/1")

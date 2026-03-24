@@ -53,26 +53,20 @@ function MediaOutputCompareSlider({
       options = merge({}, renderImageDefaultOptions, options ?? {})
       return (
         <div
-          className="relative bg-white1 dark:bg-black1"
+          className="relative w-full h-full bg-white1 dark:bg-black1"
           id={`image-comparison-${options?.isOriginal ? 0 : 1}`}
           key={`image-comparison-${options?.isOriginal ? 0 : 1}`}
         >
           <img
             src={src}
             alt={`compare image ${options?.isOriginal ? 0 : 1}`}
-            className="max-h-[65vh] object-contain"
-            // TODO: Figure this out
-            {...(mediaFile?.dimensions?.width
-              ? { width: mediaFile?.dimensions?.width }
-              : {})}
+            className="w-full h-full max-h-[60vh] object-contain"
           />
           {options?.enableZoomViewer ? (
             <div
               className={cn(
-                'absolute bottom-4',
-                options?.isOriginal
-                  ? 'left-4 isolate z-[100]'
-                  : 'right-4 z-[100]',
+                'absolute bottom-4 bg-zinc-900/10 dark:bg-zinc-900/40 min-h-[25px] px-2 rounded-2xl flex items-center',
+                options?.isOriginal ? 'left-4' : 'right-4',
               )}
             >
               <ImageViewer
@@ -99,11 +93,7 @@ function MediaOutputCompareSlider({
         </div>
       )
     },
-    [
-      mediaFile?.dimensions?.width,
-      mediaFile?.isProcessCompleted,
-      mediaFile?.config?.convertToExtension,
-    ],
+    [mediaFile?.isProcessCompleted, mediaFile?.config?.convertToExtension],
   )
 
   const renderVideo = useCallback(
@@ -111,39 +101,39 @@ function MediaOutputCompareSlider({
       options = merge({}, renderVideoDefaultOptions, options ?? {})
 
       return (
-        <VideoPlayer
+        <div
+          className="w-full h-full relative bg-white1 dark:bg-black1"
           id={`video-comparison-${options?.isOriginal ? 0 : 1}`}
           key={`video-comparison-${options?.isOriginal ? 0 : 1}`}
-          url={src}
-          autoPlay
-          loop
-          controls={false}
-          playPauseOnSpaceKeydown={false}
-          disableClosedCaptions
-          disablePlayPauseControlAtCenter
-          disablePlayPauseViaContainerClick
-          containerClassName="w-full h-full"
-          // TODO: Figure this out. This overflows the container
-          // {...(mediaFile?.dimensions?.width
-          //   ? { width: mediaFile?.dimensions?.width }
-          //   : {})}
-          style={{
-            width: '100%',
-            minWidth: '50vw',
-            maxHeight: '65vh',
-            aspectRatio:
-              (mediaFile?.dimensions?.width ?? 1) /
-              (mediaFile?.dimensions?.height ?? 1),
-          }}
-          muted={options?.isOriginal}
-        />
+        >
+          <VideoPlayer
+            url={src}
+            autoPlay
+            loop
+            controls={false}
+            playPauseOnSpaceKeydown={false}
+            disableClosedCaptions
+            disablePlayPauseControlAtCenter
+            disablePlayPauseViaContainerClick
+            containerClassName="w-full h-full"
+            style={{
+              width: '100%',
+              minWidth: '50vw',
+              maxHeight: '60vh',
+              aspectRatio:
+                (mediaFile?.dimensions?.width ?? 1) /
+                (mediaFile?.dimensions?.height ?? 1),
+            }}
+            muted={options?.isOriginal}
+          />
+        </div>
       )
     },
     [mediaFile?.dimensions?.width, mediaFile?.dimensions?.height],
   )
 
   return (
-    <div id={id} className="rounded-3xl overflow-hidden w-fit">
+    <div id={id} className="rounded-3xl overflow-hidden">
       {mediaFile?.type === 'image' &&
       ((mediaFile?.compressedFile?.extension === 'svg' &&
         (mediaFile?.compressedFile?.sizeInBytes ?? 0) >=
@@ -183,7 +173,7 @@ function MediaOutputCompareSlider({
                 })
           }
           handle={<ReactCompareSliderHandle />}
-          style={{ width: 'fit-content' }}
+          style={{ width: '100%', height: '100%' }}
         />
       </div>
     </div>

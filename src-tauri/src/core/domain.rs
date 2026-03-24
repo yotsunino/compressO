@@ -1,6 +1,38 @@
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use std::collections::HashMap;
 use strum::{AsRefStr, EnumProperty};
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum MediaTransform {
+    Crop {
+        value: MediaTransformCrop,
+    },
+    Rotate {
+        value: i64, // Angle in degrees
+    },
+    Flip {
+        value: MediaTransformFlip,
+    },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaTransformCrop {
+    pub top: f64,
+    pub left: f64,
+    pub width: f64,
+    pub height: f64,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaTransformFlip {
+    pub horizontal: bool,
+    pub vertical: bool,
+}
+
+pub type MediaTransformHistory = Vec<MediaTransform>;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -72,40 +104,9 @@ pub struct CancelInProgressCompressionPayload {
 #[serde(rename_all = "camelCase")]
 pub struct VideoInfo {
     pub duration: Option<f64>,
-    pub dimensions: Option<(u32, u32)>,
+    pub dimensions: Option<(f64, f64)>,
     pub fps: Option<f32>,
 }
-
-#[derive(Serialize, Deserialize)]
-pub struct ImageInfo {
-    pub dimensions: Option<(u32, u32)>,
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct VideoCoordinates {
-    pub top: u32,
-    pub left: u32,
-    pub width: u32,
-    pub height: u32,
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct VideoFlip {
-    pub horizontal: bool,
-    pub vertical: bool,
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct VideoTransforms {
-    pub crop: VideoCoordinates,
-    pub rotate: i32,
-    pub flip: VideoFlip,
-}
-
-use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -131,26 +132,6 @@ pub struct BatchVideoIndividualCompressionResult {
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct VideoFileMetadata {
-    pub id: String,
-    pub file_name: String,
-    pub path: String,
-    pub size: u64,
-    pub thumbnail_path: Option<String>,
-    pub duration: Option<String>,
-    pub dimensions: Option<(u32, u32)>,
-    pub fps: Option<f32>,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct VideoWithPath {
-    pub video_path: String,
-    pub video_id: String,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct VideoCompressionConfig {
     pub video_id: String,
     pub video_path: String,
@@ -158,10 +139,10 @@ pub struct VideoCompressionConfig {
     pub preset_name: Option<String>,
     pub audio_config: AudioConfig,
     pub quality: u16,
-    pub dimensions: Option<(u32, u32)>,
+    pub dimensions: Option<(f64, f64)>,
     pub fps: Option<String>,
     pub video_codec: Option<String>,
-    pub transforms_history: Option<Vec<Value>>,
+    pub transform_history: Option<MediaTransformHistory>,
     pub metadata_config: Option<VideoMetadataConfig>,
     pub custom_thumbnail_path: Option<String>,
     pub should_enable_custom_thumbnail: Option<bool>,
@@ -387,6 +368,8 @@ pub struct ImageCompressionConfig {
     pub quality: u8, // 1-100
     pub strip_metadata: Option<bool>,
     pub svg_config: Option<SvgConfig>,
+    pub dimensions: Option<(f64, f64)>,
+    pub transform_history: Option<MediaTransformHistory>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

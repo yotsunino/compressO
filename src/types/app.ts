@@ -8,11 +8,11 @@ import {
   ContainerInfo,
   compressionPresets,
   extensions,
+  MediaTransformHistory,
+  MediaTransforms,
   SubtitleStream,
   SvgConfig,
   VideoStream,
-  VideoTransforms,
-  VideoTransformsHistory,
 } from '@/types/compression'
 
 export type VideoMetadataConfig = {
@@ -65,8 +65,8 @@ export type VideoConfig = {
   customVideoCodec?: string
   shouldTransformVideo?: boolean
   transformVideoConfig?: {
-    transforms: VideoTransforms
-    transformsHistory: VideoTransformsHistory[]
+    transforms: MediaTransforms
+    transformHistory: MediaTransformHistory[]
     previewUrl?: string
   }
   isVideoTransformEditMode?: boolean
@@ -137,6 +137,15 @@ export type ImageConfig = {
   svgScaleFactor?: number
   svgConfig?: SvgConfig
   shouldEnableAdvancedSvgSetting?: boolean
+  shouldEnableCustomDimensions?: boolean
+  customDimensions?: [number, number]
+  shouldTransformImage?: boolean
+  transformImageConfig?: {
+    transforms: MediaTransforms
+    transformHistory: MediaTransformHistory[]
+    previewUrl?: string
+  }
+  isImageTransformEditMode?: boolean
 }
 
 export type Image = {
