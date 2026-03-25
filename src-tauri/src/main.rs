@@ -174,6 +174,7 @@ async fn main() {
             )));
 
             file_system::setup_app_data_dir(app)?;
+            file_system::ensure_assets_dir(&app.app_handle())?;
 
             let app_handle = app.handle().clone();
             app.once("frontend-ready", move |_| {

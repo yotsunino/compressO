@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use clipboard_rs::{Clipboard, ClipboardContext};
+use clipboard_rs::{common::RustImage, Clipboard, ClipboardContext};
 use tauri::{AppHandle, Manager, Url};
 use tauri_plugin_fs::FsExt;
 
@@ -65,9 +65,36 @@ pub async fn read_files_from_clipboard(
     app_handle: tauri::AppHandle,
 ) -> Result<Vec<String>, String> {
     let ctx = ClipboardContext::new().map_err(|err| err.to_string())?;
-    let paths = ctx.get_files().map_err(|err| err.to_string())?;
 
-    Ok(allow_asset_scopes(&app_handle, paths, Some(0))?)
+    let files_result = ctx.get_files();
+
+    if let Ok(paths) = files_result {
+        if !paths.is_empty() {
+            return Ok(allow_asset_scopes(&app_handle, paths, Some(0))?);
+        }
+    }
+
+    // If no files found, try to get image from clipboard
+    let image_result = ctx.get_image();
+
+    if let Ok(img) = image_result {
+        let assets_dir = fs::ensure_assets_dir(&app_handle)?;
+
+        let filename = format!("{}.png", nanoid::nanoid!());
+        let image_path = assets_dir.join(&filename);
+
+        img.save_to_path(image_path.to_str().unwrap())
+            .map_err(|err| err.to_string())?;
+
+        let fs_scope = app_handle.fs_scope();
+        let asset_scope = app_handle.asset_protocol_scope();
+        let _ = fs_scope.allow_file(image_path.to_str().unwrap());
+        let _ = asset_scope.allow_file(image_path.to_str().unwrap());
+
+        return Ok(vec![image_path.to_str().unwrap().to_string()]);
+    }
+
+    Err("No files or images found in clipboard".to_string())
 }
 
 #[tauri::command]

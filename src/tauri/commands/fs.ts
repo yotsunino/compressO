@@ -37,6 +37,7 @@ export function copyFileToClipboard(filePath: string) {
     filePath,
   })
 }
+
 export function readFilesFromClipboard() {
   return core.invoke<string[]>('read_files_from_clipboard')
 }

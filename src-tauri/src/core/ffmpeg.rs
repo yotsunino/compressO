@@ -7,7 +7,7 @@ use crate::core::domain::{
 use crate::core::ffprobe::FFPROBE;
 use crate::core::image::ImageCompressor;
 use crate::core::media_process::{CancelCallback, MediaProcessExecutorBuilder};
-use crate::sys::fs::get_file_metadata;
+use crate::sys::fs::{ensure_assets_dir, get_file_metadata};
 use crate::utils;
 use nanoid::nanoid;
 use regex::Regex;
@@ -28,17 +28,7 @@ const EXTENSIONS: [&str; 6] = ["mp4", "mov", "webm", "avi", "mkv", "gif"];
 
 impl FFMPEG {
     pub fn new(app: &tauri::AppHandle) -> Result<Self, String> {
-        let app_data_dir = match app.path().app_data_dir() {
-            Ok(path_buf) => path_buf,
-            Err(_) => {
-                return Err(String::from(
-                    "Application app directory is not setup correctly.",
-                ));
-            }
-        };
-        let assets_dir: PathBuf = [PathBuf::from(&app_data_dir), PathBuf::from("assets")]
-            .iter()
-            .collect();
+        let assets_dir = ensure_assets_dir(app)?;
 
         Ok(Self {
             app: app.to_owned(),

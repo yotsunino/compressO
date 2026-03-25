@@ -6,7 +6,7 @@ use crate::core::domain::{
 use crate::core::ffmpeg::build_ffmpeg_filters;
 use crate::core::ffmpeg::FFMPEG;
 use crate::core::media_process::MediaProcessExecutorBuilder;
-use crate::sys::fs::{get_file_metadata, get_image_dimension};
+use crate::sys::fs::{ensure_assets_dir, get_file_metadata, get_image_dimension};
 use image::{ImageEncoder, ImageReader};
 use img_parts::{
     jpeg::Jpeg,
@@ -35,17 +35,7 @@ pub struct ImageCompressor {
 
 impl ImageCompressor {
     pub fn new(app: &tauri::AppHandle) -> Result<Self, String> {
-        let app_data_dir = match app.path().app_data_dir() {
-            Ok(path_buf) => path_buf,
-            Err(_) => {
-                return Err(String::from(
-                    "Application app directory is not setup correctly.",
-                ));
-            }
-        };
-        let assets_dir: PathBuf = [PathBuf::from(&app_data_dir), PathBuf::from("assets")]
-            .iter()
-            .collect();
+        let assets_dir = ensure_assets_dir(app)?;
 
         Ok(Self {
             app: app.to_owned(),

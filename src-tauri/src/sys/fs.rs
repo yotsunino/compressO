@@ -14,13 +14,22 @@ pub fn setup_app_data_dir(app: &mut tauri::App) -> Result<PathBuf, tauri::Error>
     let app_data_directory = app.path().app_data_dir()?;
     scope.allow_directory(&app_data_directory, true)?;
 
-    // Create assets directory required for ffmpeg
-    fs::create_dir_all(format!(
-        "{}/assets",
-        &app_data_directory.display().to_string()
-    ))?;
-
     Ok(app_data_directory)
+}
+
+/// Ensure the assets directory exists
+pub fn ensure_assets_dir(app_handle: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let app_data_dir = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|err| err.to_string())?;
+
+    let assets_dir = app_data_dir.join("assets");
+
+    fs::create_dir_all(&assets_dir)
+        .map_err(|err| format!("Failed to create assets directory: {}", err))?;
+
+    Ok(assets_dir)
 }
 
 /// Get metadata of a file from it's full path
