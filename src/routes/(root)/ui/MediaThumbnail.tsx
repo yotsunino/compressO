@@ -364,10 +364,12 @@ function MediaThumbnail({ mediaIndex }: MediaThumbnailProps) {
                   },
                 }}
                 disableClosedCaptions
-                onError={() => {
-                  toast.warning('Switching to image thumbnail...')
-                  if (appProxy.state.media[mediaIndex].type === 'video') {
-                    appProxy.state.media[mediaIndex].previewMode = 'image'
+                onError={(error: any) => {
+                  if (error.name !== 'AbortError') {
+                    toast.warning('Switching to image thumbnail...')
+                    if (appProxy.state.media[mediaIndex].type === 'video') {
+                      appProxy.state.media[mediaIndex].previewMode = 'image'
+                    }
                   }
                 }}
                 onProgress={({ playedSeconds }: OnProgressProps) => {

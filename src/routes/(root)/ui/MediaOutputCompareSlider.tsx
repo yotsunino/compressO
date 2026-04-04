@@ -10,6 +10,7 @@ import Icon from '@/components/Icon'
 import ImageViewer from '@/components/ImageViewer'
 import Tooltip from '@/components/Tooltip'
 import VideoPlayer from '@/components/VideoPlayer'
+import { getPlatform } from '@/utils/fs'
 import { cn } from '@/utils/tailwind'
 import { appProxy } from '../-state'
 
@@ -36,6 +37,8 @@ const renderVideoDefaultOptions: renderImageDefaultType = {
 }
 
 const SVG_MAX_RENDERING_SIZE_LIMIT = 5 * 1024 * 1024
+
+const platform = getPlatform()
 
 function MediaOutputCompareSlider({
   mediaIndex,
@@ -164,9 +167,14 @@ function MediaOutputCompareSlider({
                 ? renderImage(`${outputPath!}?id={${id}}`, {
                     isOriginal: false,
                   })
-                : renderVideo(`${outputPath!}?id={${id}}`, {
-                    isOriginal: false,
-                  })
+                : renderVideo(
+                    platform.isLinux
+                      ? outputPath! // On Linux, video is played over tcp so we need to pass the exact url
+                      : `${outputPath!}?id={${id}}`,
+                    {
+                      isOriginal: false,
+                    },
+                  )
               : renderImage(`${outputPath!}?id={${id}}`, {
                   isOriginal: false,
                 })
