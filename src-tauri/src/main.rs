@@ -6,6 +6,9 @@ mod sys;
 mod tauri_commands;
 mod utils;
 
+#[cfg(target_os = "linux")]
+use core::server;
+
 use std::sync::{Arc, Mutex, OnceLock};
 use sys::fs::{self as file_system};
 use tauri::{Emitter, Listener, Manager, Url};
@@ -31,6 +34,9 @@ use tauri_commands::{
     media::compress_media_batch,
     updater::{check_update, download_and_install_update},
 };
+
+#[cfg(target_os = "linux")]
+use tauri_commands::server::{get_video_server_url, get_video_url};
 
 #[cfg(target_os = "linux")]
 use tauri_commands::file_manager::DbusState;
@@ -176,6 +182,32 @@ async fn main() {
                 dbus::blocking::SyncConnection::new_session().ok(),
             )));
 
+            #[cfg(target_os = "linux")]
+            {
+                // Start the local video server for Linux
+                // This works around the WebKit bug where file:// URLs don't work for videos on Linux
+                // We need to block on getting the port to make it available to the app state
+                let rt = match tokio::runtime::Handle::try_current() {
+                    Ok(handle) => handle,
+                    Err(e) => {
+                        return Err(Box::new(e) as Box<dyn std::error::Error>);
+                    }
+                };
+
+                let server_state = match rt.block_on(async { server::start_server().await }) {
+                    Ok(state) => state,
+                    Err(e) => {
+                        log::error!("Failed to start video server: {:?}", e);
+                        return Err(Box::new(e) as Box<dyn std::error::Error>);
+                    }
+                };
+
+                log::info!("Video server started on port {}", server_state.port);
+
+                // Store the server state so it can be accessed by Tauri commands
+                app.manage(server_state.clone());
+            }
+
             file_system::setup_app_data_dir(app)?;
             file_system::ensure_assets_dir(&app.app_handle())?;
 
@@ -279,17 +311,31 @@ async fn main() {
             get_image_basic_info,
             get_image_dimensions,
             get_image_color_info,
-            get_exif_info
+            get_exif_info,
+            #[cfg(target_os = "linux")]
+            get_video_server_url,
+            #[cfg(target_os = "linux")]
+            get_video_url
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
         .run(
             #[allow(unused_variables)]
             |app_handle, event| {
-                #[cfg(any(target_os = "macos"))]
+                #[cfg(target_os = "macos")]
                 if let tauri::RunEvent::Opened { urls } = event {
                     if let Err(e) = handle_open_with_app(app_handle, urls) {
                         log::error!("Failed to handle open with app: {:?}", e);
+                    }
+                }
+
+                // Handle server shutdown on Linux
+                #[cfg(target_os = "linux")]
+                if matches!(event, tauri::RunEvent::Exit) {
+                    if let Some(server_state) = app_handle.try_state::<core::server::ServerState>()
+                    {
+                        log::info!("App exiting, shutting down video server");
+                        core::server::shutdown_server(&server_state);
                     }
                 }
             },
