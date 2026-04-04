@@ -36,7 +36,7 @@ use tauri_commands::{
 };
 
 #[cfg(target_os = "linux")]
-use tauri_commands::server::{get_server_url, get_video_url};
+use tauri_commands::server::{construct_video_url, get_server_url};
 
 #[cfg(target_os = "linux")]
 use tauri_commands::file_manager::DbusState;
