@@ -6,6 +6,7 @@ mod sys;
 mod tauri_commands;
 mod utils;
 
+#[cfg(target_os = "linux")]
 use core::server;
 
 use std::sync::{Arc, Mutex, OnceLock};
@@ -31,9 +32,11 @@ use tauri_commands::{
         get_image_color_info, get_image_dimensions,
     },
     media::compress_media_batch,
-    server::{get_video_server_url, get_video_url},
     updater::{check_update, download_and_install_update},
 };
+
+#[cfg(target_os = "linux")]
+use tauri_commands::server::{get_server_url, get_video_url};
 
 #[cfg(target_os = "linux")]
 use tauri_commands::file_manager::DbusState;
@@ -179,68 +182,60 @@ async fn main() {
                 dbus::blocking::SyncConnection::new_session().ok(),
             )));
 
-            // Start the local video server
-            // This works around the WebKit bug where file:// URLs don't work for videos on Linux
-            use std::sync::mpsc;
-            use std::thread;
-            use std::time::Duration;
+            #[cfg(target_os = "linux")]
+            {
+                use std::sync::mpsc;
+                use std::thread;
+                use std::time::Duration;
 
-            let (tx, rx) = mpsc::channel();
+                let (tx, rx) = mpsc::channel();
 
-            thread::spawn(move || {
-                let rt = match tokio::runtime::Runtime::new() {
-                    Ok(rt) => rt,
-                    Err(e) => {
-                        let _ = tx.send(Err(format!("Failed to create runtime: {}", e)));
-                        return;
+                thread::spawn(move || {
+                    let rt = match tokio::runtime::Runtime::new() {
+                        Ok(rt) => rt,
+                        Err(e) => {
+                            let _ = tx.send(Err(format!("Failed to create runtime: {}", e)));
+                            return;
+                        }
+                    };
+
+                    rt.block_on(async {
+                        match server::start_server().await {
+                            Ok(state) => {
+                                let shutdown_tx = state.shutdown_tx.clone();
+                                let _ = tx.send(Ok(state));
+
+                                let mut shutdown_rx = shutdown_tx.subscribe();
+                                let _ = shutdown_rx.recv().await;
+                                log::info!("Server thread shutting down");
+                            }
+                            Err(e) => {
+                                log::error!("Failed to start video server: {:?}", e);
+                                let _ = tx.send(Err(format!("Server error: {}", e)));
+                            }
+                        }
+                    });
+                });
+
+                // Wait for the server to start with a timeout
+                let server_state = match rx.recv_timeout(Duration::from_secs(5)) {
+                    Ok(Ok(state)) => state,
+                    Ok(Err(e)) => {
+                        log::error!("Video server startup failed: {}", e);
+                        return Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, e)));
+                    }
+                    Err(_) => {
+                        return Err(Box::new(std::io::Error::new(
+                            std::io::ErrorKind::TimedOut,
+                            "Video server startup timed out after 5 seconds",
+                        )));
                     }
                 };
 
-                // Block on the server startup and keep it running
-                rt.block_on(async {
-                    match server::start_server().await {
-                        Ok(state) => {
-                            // Clone shutdown_tx before sending state
-                            let shutdown_tx = state.shutdown_tx.clone();
-                            let _ = tx.send(Ok(state));
+                log::info!("Video server started on port {}", server_state.port);
 
-                            // Server is running, now wait for shutdown signal
-                            // This keeps the runtime alive
-                            let mut shutdown_rx = shutdown_tx.subscribe();
-                            let _ = shutdown_rx.recv().await;
-                            log::info!("Server thread shutting down");
-                        }
-                        Err(e) => {
-                            log::error!("Failed to start video server: {:?}", e);
-                            let _ = tx.send(Err(format!("Server error: {}", e)));
-                        }
-                    }
-                });
-            });
-
-            // Wait for the server to start with a timeout
-            let server_state = match rx.recv_timeout(Duration::from_secs(5)) {
-                Ok(Ok(state)) => state,
-                Ok(Err(e)) => {
-                    log::error!("Video server startup failed: {}", e);
-                    return Err(Box::new(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        e,
-                    )));
-                }
-                Err(_) => {
-                    return Err(Box::new(std::io::Error::new(
-                        std::io::ErrorKind::TimedOut,
-                        "Video server startup timed out after 5 seconds",
-                    )));
-                }
-            };
-
-            log::info!("Video server started on port {}", server_state.port);
-
-            // Store the server state so it can be accessed by Tauri commands
-            app.manage(server_state.clone());
-
+                app.manage(server_state.clone());
+            }
             file_system::setup_app_data_dir(app)?;
             file_system::ensure_assets_dir(&app.app_handle())?;
 
@@ -345,8 +340,10 @@ async fn main() {
             get_image_dimensions,
             get_image_color_info,
             get_exif_info,
-            get_video_server_url,
-            get_video_url
+            #[cfg(target_os = "linux")]
+            get_server_url,
+            #[cfg(target_os = "linux")]
+            construct_video_url
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
@@ -360,7 +357,8 @@ async fn main() {
                     }
                 }
 
-                // Handle server shutdown on app exit
+                // Handle server shutdown on app exit (Linux only)
+                #[cfg(target_os = "linux")]
                 if matches!(event, tauri::RunEvent::Exit) {
                     if let Some(server_state) = app_handle.try_state::<core::server::ServerState>()
                     {

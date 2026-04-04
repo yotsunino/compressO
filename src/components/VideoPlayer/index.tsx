@@ -14,7 +14,7 @@ import { BaseReactPlayerProps } from 'react-player/base'
 import { ClassNameValue } from 'tailwind-merge'
 
 import { cn } from '@/utils/tailwind'
-import { getVideoUrl } from '@/utils/video'
+import { constructVideoUrl } from '@/utils/video'
 import Button from '../Button'
 import Icon from '../Icon'
 import { BoundaryRowActionRender, ScaleRender } from '../Timeline'
@@ -351,17 +351,13 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
         }
 
         try {
-          const uri = await getVideoUrl(url)
+          const uri = await constructVideoUrl(url)
           setVideoUrl(uri)
         } catch {
           setVideoUrl(url)
         }
       })()
     }, [url])
-
-    // TODO: Remove this
-    // biome-ignore lint/suspicious/noConsole: <>
-    console.log('videoUrl', videoUrl)
 
     useImperativeHandle(
       forwardedRef,

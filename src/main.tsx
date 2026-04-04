@@ -24,12 +24,13 @@ if (typeof window !== 'undefined') {
   window.__envMode = __envMode
 
   const platform = getPlatform()
-  // TODO :Remove for mac
-  if (platform.isLinux || platform.isMacOS) {
-    try {
-      const serverUrl = await getServerUrl()
-      window.__serverUrl = serverUrl ?? null
-    } catch {}
+  if (platform.isLinux) {
+    ;(async () => {
+      try {
+        const serverUrl = await getServerUrl()
+        window.__serverUrl = serverUrl ?? null
+      } catch {}
+    })()
   }
 }
 

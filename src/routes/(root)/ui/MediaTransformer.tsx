@@ -79,10 +79,7 @@ function MediaTransformer({ mediaIndex }: MediaTransformerProps) {
     }
   }
 
-  const src =
-    mediaItem.type === 'video'
-      ? core.convertFileSrc(mediaItem.thumbnailPathRaw!)
-      : core.convertFileSrc(mediaItem.thumbnailPathRaw!)
+  const src = core.convertFileSrc(mediaItem.thumbnailPathRaw!)
 
   const initialTransforms =
     mediaItem.type === 'video'

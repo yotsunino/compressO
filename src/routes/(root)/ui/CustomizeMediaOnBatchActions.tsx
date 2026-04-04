@@ -40,11 +40,31 @@ function CustomizeMediaOnBatchActions() {
             selectedMediaIndexForCustomization
           ].config.isVideoTransformEditMode = false
         }
+      } else if (
+        appProxy.state.media[selectedMediaIndexForCustomization].type ===
+        'image'
+      ) {
+        if (
+          appProxy.state.media[selectedMediaIndexForCustomization]?.config
+            ?.shouldTransformImage &&
+          appProxy.state.media[selectedMediaIndexForCustomization].config
+            ?.transformImageConfig?.previewUrl
+        ) {
+          appProxy.state.media[
+            selectedMediaIndexForCustomization
+          ].thumbnailPath =
+            appProxy.state.media[
+              selectedMediaIndexForCustomization
+            ]?.config?.transformImageConfig?.previewUrl
+          appProxy.state.media[
+            selectedMediaIndexForCustomization
+          ].config.isImageTransformEditMode = false
+        }
       }
     }
   }, [])
 
-  const handleResetVideoConfig = useCallback(() => {
+  const handleResetMediaConfig = useCallback(() => {
     const selectedMediaIndexForCustomization =
       appProxy.state.selectedMediaIndexForCustomization
     if (selectedMediaIndexForCustomization >= 0) {
@@ -60,7 +80,9 @@ function CustomizeMediaOnBatchActions() {
         appProxy.state.media[selectedMediaIndexForCustomization].isConfigDirty =
           false
       } else if (mediaSnapshot?.type === 'image') {
-        // TODO: Reset the thumbnail after adding transform image feature
+        mediaSnapshot.thumbnailPath = core.convertFileSrc(
+          mediaSnapshot.thumbnailPathRaw!,
+        )
         mediaSnapshot.config = cloneDeep(
           appProxy.state.commonConfigForBatchCompression.imageConfig,
         )
@@ -95,7 +117,7 @@ function CustomizeMediaOnBatchActions() {
           <>
             <Button
               size="sm"
-              onPress={handleResetVideoConfig}
+              onPress={handleResetMediaConfig}
               color="danger"
               variant="flat"
               radius="md"

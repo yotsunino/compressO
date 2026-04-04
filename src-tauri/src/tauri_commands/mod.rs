@@ -6,4 +6,6 @@ pub mod fs;
 pub mod image;
 pub mod media;
 pub mod updater;
+
+#[cfg(target_os = "linux")]
 pub mod server;

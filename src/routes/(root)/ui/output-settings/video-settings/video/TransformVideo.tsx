@@ -10,7 +10,6 @@ type TransformVideoProps = {
   mediaIndex: number
 }
 
-// TODO: Since we'll use transform for both image and video, see if we can reuse this component
 function TransformVideo({ mediaIndex }: TransformVideoProps) {
   if (mediaIndex < 0) return
 
