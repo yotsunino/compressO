@@ -186,24 +186,38 @@ async fn main() {
             {
                 // Start the local video server for Linux
                 // This works around the WebKit bug where file:// URLs don't work for videos on Linux
-                // We need to block on getting the port to make it available to the app state
-                let rt = match tokio::runtime::Handle::try_current() {
-                    Ok(handle) => handle,
-                    Err(e) => {
-                        return Err(Box::new(std::io::Error::new(
-                            std::io::ErrorKind::Other,
-                            format!("Failed to get tokio runtime: {}", e),
-                        )));
-                    }
-                };
+                use tokio::sync::oneshot;
 
-                let server_state = match rt.block_on(async { server::start_server().await }) {
-                    Ok(state) => state,
-                    Err(e) => {
-                        log::error!("Failed to start video server: {:?}", e);
-                        return Err(e);
+                let (tx, rx) = oneshot::channel();
+
+                tokio::spawn(async move {
+                    match server::start_server().await {
+                        Ok(state) => {
+                            let _ = tx.send(state);
+                        }
+                        Err(e) => {
+                            log::error!("Failed to start video server: {:?}", e);
+                            let _ = tx.send(Err(e));
+                        }
                     }
-                };
+                });
+
+                // Wait for the server to start and get the port
+                // Use a timeout to avoid hanging forever
+                let server_state =
+                    match tokio::time::timeout(tokio::time::Duration::from_secs(5), rx).await {
+                        Ok(Ok(state)) => state,
+                        Ok(Err(e)) => {
+                            log::error!("Video server startup failed: {:?}", e);
+                            return Err(e);
+                        }
+                        Err(_) => {
+                            return Err(Box::new(std::io::Error::new(
+                                std::io::ErrorKind::TimedOut,
+                                "Video server startup timed out after 5 seconds",
+                            )));
+                        }
+                    };
 
                 log::info!("Video server started on port {}", server_state.port);
 
