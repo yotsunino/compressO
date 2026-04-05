@@ -16,7 +16,6 @@ import featuresImage from "../assets/features.jpg";
 import heroImage from "../assets/hero.jpg";
 import compressoLogo from "../assets/compresso.png";
 import HeroAnimatedContent from "../components/HeroAnimatedContent";
-import { MeteorsBackground } from "../components/effects/MeteorsBackground";
 
 const latestRelease = await getLatestRelease();
 const downloads = getDownloadAssets(latestRelease.tag_name);
@@ -34,15 +33,11 @@ const githubStars = await fetchGitHubStars();
   </head>
   <body>
     <Header />
-    <div class="absolute h-screen w-screen overflow-hidden">
-      <MeteorsBackground client:load maxDuration={60} number={50} />
-    </div>
-
     <section class="hero w-[95vw]! xl:w-[90vw]!">
       <div class="hero-content">
         <HeroAnimatedContent client:visible />
         <p>
-          CompressO is a completely free, offline, & open-source video
+          CompressO is a completely free, offline, & open-source video/image
           compression desktop app available for Mac, Windows & Linux.
           <br />
           No cloud uploads, no signup. Just powerful compression that runs entirely
@@ -365,7 +360,7 @@ const githubStars = await fetchGitHubStars();
           class="w-30 h-auto block  mx-auto!"
       />
       <div class="container">
-        <h2 class="gradient-text">Ready to compress your videos?</h2>
+        <h2 class="gradient-text">Ready to compress your videos/images?</h2>
         <div id="downloads" class="downloads-section">
           <h3>Direct Downloads</h3>
           <div class="downloads-grid">
