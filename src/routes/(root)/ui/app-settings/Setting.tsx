@@ -127,7 +127,7 @@ function AppSetting() {
   }
 
   return (
-    <div className="w-full py-12 pb-16 px-8">
+    <div className="w-full py-10 px-8">
       <section className="mb-6">
         <Title title="Settings" iconProps={{ name: 'setting' }} />
       </section>

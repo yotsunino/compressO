@@ -28,6 +28,9 @@ function About() {
         <p className="text-center italic text-gray-600 dark:text-gray-400 text-sm my-1">
           Compress any image/video into a tiny size.
         </p>
+        <p className="self-end text-zinc-600 dark:text-zinc-400 ml-2 text-lg font-bold text-center">
+          v{window.__appVersion ?? ''}
+        </p>
       </section>
       <section className="mt-8">
         <p className="text-center text-gray-600 dark:text-gray-400 text-sm my-1">
@@ -37,17 +40,17 @@ function About() {
         </p>
       </section>
       <section>
-        <p className="text-sm text-center text-gray-600 dark:text-gray-400 my-2 flex-col flex items-center justify-center">
+        <p className="text-sm text-center text-gray-600 dark:text-gray-400 flex-col flex items-center justify-center my-4">
+          <Icon
+            name="github"
+            size={25}
+            className="text-gray-800 dark:text-gray-200 mb-1"
+          />
           <Link
             href="https://github.com/codeforreal1/compressO"
             className="flex items-center gap-1"
           >
             Free and open-source{' '}
-            <Icon
-              name="github"
-              size={25}
-              className="text-gray-800 dark:text-gray-200"
-            />
           </Link>
           <Link
             className="text-xs"
@@ -57,9 +60,6 @@ function About() {
           </Link>
         </p>
       </section>
-      <p className="self-end text-zinc-600 dark:text-zinc-400 ml-2 text-lg font-bold text-center">
-        v{window.__appVersion ?? ''}
-      </p>
     </section>
   )
 }

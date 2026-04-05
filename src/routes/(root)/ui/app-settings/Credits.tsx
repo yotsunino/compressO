@@ -6,7 +6,7 @@ import Link from '@/tauri/components/Link'
 
 export default function Credits() {
   return (
-    <div className="w-full py-6 pb-4 px-6">
+    <div className="w-full py-10 pb-4 px-6">
       <section className="mb-4">
         <Title
           title="Credits"
