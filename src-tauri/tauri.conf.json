@@ -93,7 +93,7 @@
       "providerShortName": null,
       "signingIdentity": null
     },
-    "resources": [],
+    "resources": { "../LICENSES/": "" },
     "linux": {
       "deb": {
         "depends": [],

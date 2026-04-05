@@ -20,8 +20,9 @@ import { usePrimaryColor } from '@/hooks/usePrimaryColor'
 import { downloadAndInstallUpdateApp, updateStore } from '@/stores/updateStore'
 import { deleteCache as invokeDeleteCache } from '@/tauri/commands/fs'
 import About from './About'
+import Credits from './Credits'
 
-type DropdownKey = 'settings' | 'about' | 'update'
+type DropdownKey = 'settings' | 'about' | 'update' | 'credits'
 
 function Setting() {
   const modalDisclosure = useDisclosure()
@@ -69,6 +70,12 @@ function Setting() {
             <DropdownItem key="about" startContent={<Icon name="info" />}>
               About
             </DropdownItem>
+            <DropdownItem
+              key="credits"
+              startContent={<Icon name="lowResHeart" />}
+            >
+              Credits
+            </DropdownItem>
             {hasNewVersion ? (
               <DropdownItem
                 key="update"
@@ -91,6 +98,8 @@ function Setting() {
             <AppSetting />
           ) : selectedKey === 'update' ? (
             <UpdateModal onClose={modalDisclosure.onClose} />
+          ) : selectedKey === 'credits' ? (
+            <Credits />
           ) : (
             <About />
           )}

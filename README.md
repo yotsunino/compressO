@@ -146,8 +146,6 @@ xattr -cr /Applications/CompressO.app
 
 ### License 🚨
 
-<a href="./LICENSE">AGPL 3.0 License</a>
+The project is licensed under <a href="./LICENSE">AGPL 3.0</a>
 
-<p className="block text-sm">
-This software uses libraries from the FFmpeg project under the LGPLv2.1.
-</p>
+This project bundles and uses third-party software. For complete third-party notices, licenses, and attributions, please see [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
