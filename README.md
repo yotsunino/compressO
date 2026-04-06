@@ -4,10 +4,10 @@
   </div>
 	<h1 align="center">CompressO</h1>
 	<p align="center">
-		Compress any video into a tiny size.
+		Compress any video/image into a tiny size.
     </p>
     <i align="center">
-		CompressO (🔉 pronounced like "Espresso" ) is a free and open-sourced cross-platform video compression app powered by FFmpeg.
+		CompressO (🔉 pronounced like "Espresso" ) is a free and open-sourced cross-platform video/image compression app.
     </i>
     <br />
     <p align="center">
@@ -146,8 +146,6 @@ xattr -cr /Applications/CompressO.app
 
 ### License 🚨
 
-<a href="./LICENSE">AGPL 3.0 License</a>
+The project is licensed under <a href="./LICENSE">AGPL 3.0</a>
 
-<p className="block text-sm">
-This software uses libraries from the FFmpeg project under the LGPLv2.1.
-</p>
+This project bundles and uses third-party software. For complete third-party notices, licenses, and attributions, please see [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).

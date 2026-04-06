@@ -1,5 +1,5 @@
 import { UseDisclosureProps, useDisclosure } from '@heroui/react'
-import React from 'react'
+import { memo } from 'react'
 import { snapshot, useSnapshot } from 'valtio'
 
 import Button from '@/components/Button'
@@ -11,11 +11,11 @@ import { appProxy } from '../-state'
 
 function CompressionActions() {
   const {
-    state: { videos, isProcessCompleted, isLoadingFiles, isSaving },
+    state: { media, isProcessCompleted, isLoadingMediaFiles, isSaving },
     resetProxy,
   } = useSnapshot(appProxy)
 
-  const alertDiscloser = useDisclosure()
+  const alertDisclosure = useDisclosure()
 
   const handleDiscard = async ({
     closeModal,
@@ -23,12 +23,14 @@ function CompressionActions() {
     closeModal: UseDisclosureProps['onClose']
   }) => {
     try {
-      const deletePromises = videos
-        .flatMap((video) => [
-          video.compressedVideo?.pathRaw
-            ? deleteFile(video.compressedVideo.pathRaw)
+      const deletePromises = media
+        .flatMap((media) => [
+          media.compressedFile?.pathRaw
+            ? deleteFile(media.compressedFile.pathRaw)
             : null,
-          video.thumbnailPathRaw ? deleteFile(video.thumbnailPathRaw) : null,
+          media.type === 'video' && media.thumbnailPathRaw
+            ? deleteFile(media.thumbnailPathRaw)
+            : null,
         ])
         .filter(Boolean)
 
@@ -41,7 +43,7 @@ function CompressionActions() {
   const handleCancelCompression = () => {
     const appSnapshot = snapshot(appProxy)
     if (appSnapshot.state.isProcessCompleted && !appSnapshot.state.isSaved) {
-      alertDiscloser.onOpen()
+      alertDisclosure.onOpen()
     } else {
       resetProxy()
     }
@@ -51,11 +53,11 @@ function CompressionActions() {
     appProxy.timeTravel('beforeCompressionStarted')
   }
 
-  return videos.length && !isLoadingFiles ? (
+  return media.length && !isLoadingMediaFiles ? (
     <>
       <div className="w-fit flex justify-center items-center z-[10]">
         {isProcessCompleted ? (
-          <Tooltip content="Reset" aria-label="Reset">
+          <Tooltip content="Reconfigure" aria-label="Reset">
             <Button
               size="sm"
               onPress={handleReconfigure}
@@ -84,9 +86,9 @@ function CompressionActions() {
         </Tooltip>
       </div>
       <AlertDialog
-        title={`Video${videos.length > 1 ? 's' : ''} not saved`}
-        discloser={alertDiscloser}
-        description={`Your compressed video${videos.length > 1 ? 's are' : ' is'} not yet saved. Are you sure you want to discard it?`}
+        title={`Media not saved`}
+        disclosure={alertDisclosure}
+        description={`Your compressed media${media.length > 1 ? 'are' : ' is'} not yet saved. Are you sure you want to discard it?`}
         renderFooter={({ closeModal }) => (
           <>
             <AlertDialogButton onPress={closeModal}>Go Back</AlertDialogButton>
@@ -103,4 +105,4 @@ function CompressionActions() {
   ) : null
 }
 
-export default React.memo(CompressionActions)
+export default memo(CompressionActions)
