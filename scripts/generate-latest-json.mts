@@ -12,34 +12,56 @@
  * Output: Creates a latest.json file in the root directory
  */
 
-import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import * as fs from 'node:fs'
+import * as path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 // Configuration
-const CONFIG = {
+interface Config {
+  author: string
+  repo: string
+  appName: string
+}
+
+const CONFIG: Config = {
   author: 'codeforreal1',
   repo: 'compressO',
   appName: 'CompressO',
 }
 
+// Types
+interface PlatformInfo {
+  signature: string | null
+  url: string
+}
+
+interface Platforms {
+  [key: string]: PlatformInfo
+}
+
+interface LatestJson {
+  version: string
+  notes: string
+  pub_date: string
+  platforms: Platforms
+}
+
 /**
  * Get the latest version from package.json
  */
-function getVersion() {
-  const packageJson = JSON.parse(
-    fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf-8'),
-  )
+function getVersion(): string {
+  const packageJsonPath = path.join(__dirname, '..', 'package.json')
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'))
   return packageJson.version
 }
 
 /**
  * Get changelog for the specified version from CHANGELOG.md
  */
-function getChangelog(version) {
+function getChangelog(version: string): string {
   const changelogPath = path.join(__dirname, '..', 'CHANGELOG.md')
 
   if (!fs.existsSync(changelogPath)) {
@@ -59,7 +81,7 @@ function getChangelog(version) {
     return 'No changelog available'
   }
 
-  const changelogLines = []
+  const changelogLines: string[] = []
 
   for (let i = versionLineIndex + 1; i < lines.length; i++) {
     const line = lines[i]
@@ -71,12 +93,12 @@ function getChangelog(version) {
     changelogLines.push(line)
   }
 
-  while (changelogLines.length > 0 && changelogLines[0].trim() === '') {
+  while (changelogLines.length > 0 && changelogLines[0]!.trim() === '') {
     changelogLines.shift()
   }
   while (
     changelogLines.length > 0 &&
-    changelogLines[changelogLines.length - 1].trim() === ''
+    changelogLines[changelogLines.length - 1]!.trim() === ''
   ) {
     changelogLines.pop()
   }
@@ -87,14 +109,14 @@ function getChangelog(version) {
 /**
  * Get current UTC time in ISO 8601 format
  */
-function getCurrentUTCTime() {
+function getCurrentUTCTime(): string {
   return new Date().toISOString()
 }
 
 /**
  * Read signature file content
  */
-function readSignature(filePath) {
+function readSignature(filePath: string): string | null {
   try {
     if (fs.existsSync(filePath)) {
       const content = fs.readFileSync(filePath, 'utf-8')
@@ -103,7 +125,7 @@ function readSignature(filePath) {
     console.warn(`Warning: Signature file not found at ${filePath}`)
     return null
   } catch (error) {
-    console.error(`Error reading signature file:`, error)
+    console.error('Error reading signature file:', error)
     return null
   }
 }
@@ -111,9 +133,9 @@ function readSignature(filePath) {
 /**
  * Generate platform-specific URLs
  */
-function generatePlatformUrls(version) {
+function generatePlatformUrls(version: string): Platforms {
   const baseUrl = `https://github.com/${CONFIG.author}/${CONFIG.repo}/releases/download/${version}`
-  const platforms = {}
+  const platforms: Platforms = {}
 
   // macOS - Apple Silicon (aarch64)
   platforms['darwin-aarch64'] = {
@@ -140,14 +162,13 @@ function generatePlatformUrls(version) {
   }
 
   // Linux - AppImage (universal)
-  const appImageItem = {
+  const appImageItem: PlatformInfo = {
     signature: readSignature(
       `./src-tauri/target/release/bundle/appimage/${CONFIG.appName}_${version}_amd64.AppImage.sig`,
     ),
     url: `${baseUrl}/${CONFIG.appName}_${version}_amd64.AppImage`,
   }
   platforms['linux-x86_64'] = appImageItem
-
   platforms['linux-x86_64-appimage'] = appImageItem
 
   // Linux - x86_64 (deb)
@@ -164,7 +185,11 @@ function generatePlatformUrls(version) {
 /**
  * Generate the latest.json content
  */
-function generateLatestJson(version, changelog, pubDate) {
+function generateLatestJson(
+  version: string,
+  changelog: string,
+  pubDate: string,
+): LatestJson {
   const platforms = generatePlatformUrls(version)
 
   return {
@@ -178,14 +203,14 @@ function generateLatestJson(version, changelog, pubDate) {
 /**
  * Write JSON to file with proper formatting
  */
-function writeJsonFile(filePath, data) {
+function writeJsonFile(filePath: string, data: LatestJson): void {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + '\n', 'utf-8')
 }
 
 /**
  * Main function
  */
-function main() {
+function main(): void {
   console.log('> Generating `latest.json` for Tauri updater\n')
 
   const version = getVersion()
