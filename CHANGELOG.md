@@ -36,7 +36,4 @@ Bug Fixes:
 - Fixed FPS not being properly applied during GIF conversion.
 - Fixed subtitle embedding issues for multiple container formats.
 
-> **Personal note:** I primarily use this for bulk PNG→WebP conversion and video compression before uploading to my NAS. The batch compression feature in this release is a huge quality-of-life improvement for that workflow. Also using this to batch-compress dashcam footage — the video speed control is handy for quick review before archiving.
-
-### 2.1.1
-E
+> **Personal note:** I primarily use this for bulk PNG→WebP conversion and video compression before uploading to my NAS. The batch compression feature in this release is a huge quality-of-life improvement for that workflow. For my PNG→WebP pipeline I default quality to 82 (instead of the upstream default of 75) — I found it hits a better size/quality sweet spot for photography. Also keeping metadata stripping off by default since I want EXIF data preserved on my NAS archive copies.
