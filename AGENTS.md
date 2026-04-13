@@ -87,18 +87,9 @@ src/
 ├── providers/      # Context providers
 ├── routes/         # TanStack Router routes
 ├── tauri/          # Tauri command wrappers
-├── types/          # TypeScript types
-└── utils/          # Utilities (cn, string, fs)
-
-src-tauri/src/
-├── lib/            # Library modules (domain, ffmpeg, fs, tauri_commands)
-└── main.rs         # Entry point
 ```
 
-## Notes
+## Personal Notes (fork)
 
-- No test framework configured (no test scripts in package.json)
-- Offline app (no network requests)
-- FFmpeg sidecars bundled for cross-platform compression
-- Use `pnpm` as package manager
-- Follow existing patterns when adding features
+- Toast duration bumped to 3500ms locally — 2500ms felt too fast when reading error messages.
+- Keeping this fork primarily for learning Tauri + Rust interop; avoid diverging too far from upstream.
