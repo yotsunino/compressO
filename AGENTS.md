@@ -87,9 +87,10 @@ src/
 ├── providers/      # Context providers
 ├── routes/         # TanStack Router routes
 ├── tauri/          # Tauri command wrappers
+└── types/          # Shared TypeScript types
 ```
 
 ## Personal Notes (fork)
 
-- Toast duration bumped to 3500ms locally — 2500ms felt too fast when reading error messages.
-- Keeping this fork primarily for learning Tauri + Rust interop; avoid diverging too far from upstream.
+- Toast duration bumped to 3000ms in my local config — 2500ms felt too quick when reading error messages.
+- Keeping this fork in sync with upstream `codeforreal1/compressO`; check for upstream changes before adding features.
