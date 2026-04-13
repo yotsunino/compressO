@@ -36,8 +36,7 @@ Bug Fixes:
 - Fixed FPS not being properly applied during GIF conversion.
 - Fixed subtitle embedding issues for multiple container formats.
 
-> **Personal note:** I primarily use this for bulk PNG→WebP conversion and video compression before uploading to my NAS. The batch compression feature in this release is a huge quality-of-life improvement for that workflow.
+> **Personal note:** I primarily use this for bulk PNG→WebP conversion and video compression before uploading to my NAS. The batch compression feature in this release is a huge quality-of-life improvement for that workflow. Also using this to batch-compress dashcam footage — the video speed control is handy for quick review before archiving.
 
 ### 2.1.1
-Enhancements:
-- Make configuration settings label font weight bold for better visibility [5fcb190](https://github.com/codeforreal1/compressO/commit/5fcb1903c1f119d55fd54a2ddc43863d
+E
