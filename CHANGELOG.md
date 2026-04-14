@@ -36,4 +36,4 @@ Bug Fixes:
 - Fixed FPS not being properly applied during GIF conversion.
 - Fixed subtitle embedding issues for multiple container formats.
 
-> **Personal note:** I primarily use this for bulk PNG→WebP conversion and video compression before uploading to my NAS. The batch compression feature in this release is a huge quality-of-life improvement for that workflow. For my PNG→WebP pipeline specifically, I default quality to 82 (instead of the app's default 75) — I find it hits a better sweet spot between file size and visual fidelity for photos with fine detail.
+> **Personal note:** I primarily use this for bulk PNG→WebP conversion and video compression before uploading to my NAS. The batch compression feature in this release is a huge quality-of-life improvement for that workflow. For my PNG→WebP pipeline specifically, I default quality to 82 (instead of the app's default 75) — I found that's the sweet spot where file sizes are still ~60% smaller than the originals but I can't notice any visual degradation on my monitor.
