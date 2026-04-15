@@ -1,142 +1,113 @@
 {
-  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "CompressO",
-  "version": "3.0.0",
-  "identifier": "com.compresso.app",
   "build": {
-    "beforeBuildCommand": "pnpm vite:build",
-    "frontendDist": "../dist",
-    "devUrl": "http://localhost:3001"
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devPath": "http://localhost:1420",
+    "distDir": "../dist"
   },
-  "bundle": {
-    "longDescription": "Compress any video/image file to a tiny size.",
-    "shortDescription": "Compress any video/image to a tiny size",
-    "active": true,
-    "category": "Video",
-    "copyright": "Code For Real",
-    "targets": ["deb", "appimage", "nsis", "dmg", "app"],
-    "externalBin": [
-      "./bin/compresso_ffmpeg",
-      "./bin/compresso_ffprobe",
-      "./bin/compresso_pngquant",
-      "./bin/compresso_jpegoptim",
-      "./bin/compresso_gifski"
-    ],
-    "fileAssociations": [
-      {
-        "ext": ["mp4"],
-        "mimeType": "video/mp4",
-        "role": "Editor"
+  "package": {
+    "productName": "compressO",
+    "version": "0.2.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "shell": {
+        "all": false,
+        "open": true
       },
-      {
-        "ext": ["mov"],
-        "mimeType": "video/quicklime's",
-        "role": "Editor"
+      "dialog": {
+        "all": false,
+        "open": true,
+        "save": true
       },
-      {
-        "ext": ["mkv"],
-        "mimeType": "video/x-matroska",
-        "role": "Editor"
+      "fs": {
+        "all": false,
+        "readFile": true,
+        "writeFile": true,
+        "readDir": true,
+        "copyFile": true,
+        "createDir": true,
+        "removeDir": true,
+        "removeFile": true,
+        "renameFile": true,
+        "exists": true,
+        "scope": ["$HOME/**", "$APPDATA/**", "$DOWNLOAD/**", "$DESKTOP/**", "$DOCUMENT/**", "$PICTURE/**", "$VIDEO/**"]
       },
-      {
-        "ext": ["webm"],
-        "mimeType": "video/webm",
-        "role": "Editor"
+      "path": {
+        "all": true
       },
-      {
-        "ext": ["avi"],
-        "mimeType": "video/x-msvideo",
-        "role": "Editor"
+      "os": {
+        "all": true
       },
-      {
-        "ext": ["png"],
-        "mimeType": "image/png",
-        "role": "Editor"
+      "process": {
+        "all": false,
+        "exit": true,
+        "relaunch": true
       },
-      {
-        "ext": ["jpg", "jpeg"],
-        "mimeType": "image/jpeg",
-        "role": "Editor"
+      "notification": {
+        "all": true
       },
-      {
-        "ext": ["webp"],
-        "mimeType": "image/webp",
-        "role": "Editor"
-      },
-      {
-        "ext": ["gif"],
-        "mimeType": "image/gif",
-        "role": "Editor"
-      },
-      {
-        "ext": ["svg"],
-        "mimeType": "image/svg+xml",
-        "role": "Editor"
-      }
-    ],
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
-    ],
-    "windows": {
-      "certificateThumbprint": null,
-      "digestAlgorithm": "sha256",
-      "timestampUrl": ""
-    },
-    "macOS": {
-      "entitlements": null,
-      "exceptionDomain": "",
-      "frameworks": [],
-      "providerShortName": null,
-      "signingIdentity": null
-    },
-    "resources": { "../LICENSES/": "" },
-    "linux": {
-      "deb": {
-        "depends": [],
-        "desktopTemplate": "compressO.desktop.template"
+      "clipboard": {
+        "all": false,
+        "writeText": true,
+        "readText": true
       }
     },
-    "createUpdaterArtifacts": true
-  },
-  "plugins": {
-    "updater": {
+    "bundle": {
       "active": true,
-      "endpoints": [
-        "https://github.com/codeforreal1/compressO/releases/latest/download/latest.json"
+      "category": "Utility",
+      "copyright": "",
+      "deb": {
+        "depends": []
+      },
+      "externalBin": [
+        "binaries/ffmpeg"
       ],
-      "dialog": false,
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDZDRjIzRTAxQzc1Njc4RjgKUldUNGVGYkhBVDd5YkJNejh2aHlOeS9XekFOcUlxUXhIYlBLS1ZLdHJzVW4zRVE1QUhUUjZOd0QK"
-    }
-  },
-  "app": {
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.icns",
+        "icons/icon.ico"
+      ],
+      "identifier": "com.compresso.app",
+      "longDescription": "A simple, fast, and free media compression tool built with Tauri and FFmpeg.",
+      "macOS": {
+        "entitlements": null,
+        "exceptionDomain": "",
+        "frameworks": [],
+        "providerShortName": null,
+        "signingIdentity": null
+      },
+      "resources": [],
+      "shortDescription": "Media compression made easy",
+      "targets": "all",
+      "windows": {
+        "certificateThumbprint": null,
+        "digestAlgorithm": "sha256",
+        "timestampUrl": ""
+      }
+    },
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ipc: http://ipc.localhost"
+    },
+    "updater": {
+      "active": false
+    },
     "windows": [
       {
-        "title": "CompressO",
         "fullscreen": false,
-        "height": 992,
-        "width": 1280,
-        "minWidth": 1080,
-        "minHeight": 800,
+        "height": 720,
         "resizable": true,
-        "hiddenTitle": true,
-        "backgroundColor": "#FFFFFF",
-        "titleBarStyle": "Overlay"
+        "title": "compressO",
+        "width": 1100,
+        "minWidth": 900,
+        "minHeight": 600,
+        "center": true,
+        "decorations": true,
+        "transparent": false
       }
-    ],
-    "security": {
-      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost https://asset.localhost blob: data:; media-src 'self' asset: http://asset.localhost https://asset.localhost blob:; style-src 'unsafe-inline' 'self'; connect-src 'self' ipc: http://ipc.localhost https://ipc.localhost asset: blob: blob:tauri://localhost;",
-      "dangerousDisableAssetCspModification": ["style-src"],
-      "assetProtocol": {
-        "enable": true,
-        "scope": {
-          "allow": ["$APPDATA/**"],
-          "requireLiteralLeadingDot": false
-        }
-      }
-    }
+    ]
   }
 }
